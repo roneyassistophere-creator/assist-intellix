@@ -25,6 +25,12 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(dirname),
     },
+    meta: {
+      icons: [
+        { url: '/favicon-payload.svg', type: 'image/svg+xml' },
+        { url: '/favicon-payload.ico', sizes: '32x32' },
+      ],
+    },
     user: Users.slug,
     livePreview: {
       breakpoints: [

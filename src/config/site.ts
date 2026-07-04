@@ -66,26 +66,26 @@ export type SiteConfig = {
 
 const siteConfig: SiteConfig = {
   // ─── Identity ──────────────────────────────────────────────────────────────
-  name: 'Acme Agency',
+  name: 'Assist Intellix',
   tagline: 'We grow your business.',
   description:
-    'Acme Agency delivers world-class digital marketing, SEO, and web design for modern businesses.',
+    'Assist Intellix delivers world-class digital marketing, SEO, and web design for modern businesses.',
   url: process.env.NEXT_PUBLIC_SERVER_URL ?? 'http://localhost:3000',
 
   // ─── Logo ──────────────────────────────────────────────────────────────────
   logo: {
-    text: 'Acme Agency',
+    text: 'Assist Intellix',
     // imagePath: '/logo.svg',
   },
 
   // ─── SEO defaults ──────────────────────────────────────────────────────────
   seo: {
-    titleTemplate: '%s | Acme Agency',
-    defaultTitle: 'Acme Agency — Digital Marketing & Web Design',
+    titleTemplate: '%s | Assist Intellix',
+    defaultTitle: 'Assist Intellix — Digital Marketing & Web Design',
     defaultDescription:
-      'Acme Agency delivers world-class SEO, web design, and paid advertising for modern businesses.',
+      'Assist Intellix delivers world-class SEO, web design, and paid advertising for modern businesses.',
     defaultOgImage: '/website-template-OG.webp',
-    twitterHandle: '@acme',
+    twitterHandle: '@assistintellix',
     googleVerification: process.env.GOOGLE_SITE_VERIFICATION ?? '',
     bingVerification: process.env.BING_SITE_VERIFICATION ?? '',
   },
@@ -176,21 +176,21 @@ const siteConfig: SiteConfig = {
 
   // ─── Contact ───────────────────────────────────────────────────────────────
   contact: {
-    email: 'hello@acme.com',
+    email: 'hello@assistintellix.com',
     phone: '+1 (555) 000-0000',
     address: '123 Main St, San Francisco, CA 94105',
   },
 
   // ─── Social ────────────────────────────────────────────────────────────────
   social: [
-    { platform: 'Twitter / X', href: 'https://twitter.com/acme', icon: 'twitter' },
-    { platform: 'LinkedIn', href: 'https://linkedin.com/company/acme', icon: 'linkedin' },
-    { platform: 'GitHub', href: 'https://github.com/acme', icon: 'github' },
+    { platform: 'Twitter / X', href: 'https://twitter.com/assistintellix', icon: 'twitter' },
+    { platform: 'LinkedIn', href: 'https://linkedin.com/company/assistintellix', icon: 'linkedin' },
+    { platform: 'GitHub', href: 'https://github.com/assistintellix', icon: 'github' },
   ],
 
   // ─── Organization (used for JSON-LD structured data) ───────────────────────
   org: {
-    legalName: 'Acme Agency LLC',
+    legalName: 'Assist Intellix LLC',
     foundingYear: 2020,
     areaServed: 'Worldwide',
   },

@@ -3,29 +3,64 @@ import Image from 'next/image'
 import React from 'react'
 import siteConfig from '@/config/site'
 
-// Icon mark extracted from favicon.svg. Replace with your brand icon when customising.
-// Background uses var(--foreground), paths use var(--background) so it inverts automatically
-// between light mode (black square / white icon) and dark mode (white square / black icon).
+// Assist Intellix brand mark. Same artwork in light and dark mode — the gradient
+// fill already has enough contrast against both backgrounds.
 const LogoMark = () => (
   <svg
     width="28"
     height="28"
-    viewBox="0 0 1000 1000"
+    viewBox="0 0 500 500"
     xmlns="http://www.w3.org/2000/svg"
     aria-hidden="true"
     className="shrink-0"
   >
-    <rect width="1000" height="1000" rx="350" style={{ fill: 'var(--foreground)' }} />
-    <g transform="matrix(5,0,0,5,192.5,150)">
-      <path
-        d="M60.2569 118.758L18.9035 94.9917C18.4016 94.6917 18.067 94.1583 18.067 93.5583V56.825C18.067 56.1917 18.7696 55.7917 19.3049 56.0917L67.3164 83.6917C67.9855 84.0917 68.822 83.5917 68.822 82.825V64.925C68.822 64.225 68.4539 63.5583 67.8182 63.1917L10.0707 29.9917C9.56883 29.6917 8.89968 29.6917 8.39782 29.9917L0.836436 34.3583C0.334574 34.6583 0 35.1917 0 35.7917V104.025C0 104.625 0.334574 105.158 0.836436 105.458L60.1565 139.592C60.6583 139.892 61.3275 139.892 61.8293 139.592L111.647 110.925C112.317 110.525 112.317 109.592 111.647 109.192L96.1232 100.258C95.4875 99.8917 94.7515 99.8917 94.1158 100.258L61.9632 118.758C61.4613 119.058 60.7922 119.058 60.2903 118.758H60.2569Z"
-        style={{ fill: 'var(--background)' }}
-      />
-      <path
-        d="M121.149 34.325L61.8294 0.225C61.3275 -0.075 60.6584 -0.075 60.1565 0.225L28.8069 18.2583C28.1378 18.6583 28.1378 19.5917 28.8069 19.9917L44.1973 28.8583C44.833 29.225 45.5691 29.225 46.2048 28.8583L60.2569 20.7917C60.7588 20.4917 61.4279 20.4917 61.9298 20.7917L103.283 44.5583C103.785 44.8583 104.12 45.3917 104.12 45.9917V82.8917C104.12 83.5917 104.488 84.2583 105.123 84.625L120.514 93.4583C121.183 93.8583 122.019 93.3583 122.019 92.5917V35.7917C122.019 35.1917 121.685 34.6583 121.183 34.3583L121.149 34.325Z"
-        style={{ fill: 'var(--background)' }}
-      />
-    </g>
+    <defs>
+      <linearGradient
+        id="assist-intellix-logo-gradient-1"
+        x1="148.86"
+        y1="321.33"
+        x2="475.72"
+        y2="321.33"
+        gradientUnits="userSpaceOnUse"
+      >
+        <stop offset="0" stopColor="#00adee" />
+        <stop offset="1" stopColor="#0b279e" />
+      </linearGradient>
+      <linearGradient
+        id="assist-intellix-logo-gradient-2"
+        x1="24.28"
+        y1="275.09"
+        x2="279.61"
+        y2="275.09"
+        gradientUnits="userSpaceOnUse"
+      >
+        <stop offset="0" stopColor="#11b0e3" />
+        <stop offset="1" stopColor="#026ce8" />
+      </linearGradient>
+      <linearGradient
+        id="assist-intellix-logo-gradient-3"
+        x1="77.02"
+        y1="142.66"
+        x2="309.72"
+        y2="142.66"
+        gradientUnits="userSpaceOnUse"
+      >
+        <stop offset="0" stopColor="#50e6d5" />
+        <stop offset="1" stopColor="#1a85db" />
+      </linearGradient>
+    </defs>
+    <path
+      fill="url(#assist-intellix-logo-gradient-1)"
+      d="M471.2,370.76l-66.47-114.84-6.01-10.34-39.6-66.71c-7.57-12.38-21.63-16.83-33.95-13.58-7.93,2.1-15.08,7.39-19.35,15.75l-36.06,59.49c-2.4,4.81-3.49,10.1-3.19,15.26.12,2.04.42,4.09.9,6.07.72,3,1.98,5.89,3.67,8.59l25,40.03.6.96,18.45,29.21,2.16,3.37c.78,1.2,1.44,2.4,2.04,3.67q0,.06.06.12v.06c7.09,15.86-2.16,35.64-18.93,37.98-.36,0-.72.06-1.08.06h-51.14c-5.77,0-32.69-.18-51.8-.3-8.65-.06-16.77,4.33-21.45,11.6l-21.21,32.81c-13.04,20.07,1.08,46.63,25,47.06l67.49,1.32c10.7.24,20.67-5.17,26.38-14.18l25.48-40.15c1.26-1.98,3.37-3.13,5.71-3.13h123.08l19.35.06c23.56-.96,36.96-29.99,24.88-50.24Z"
+    />
+    <path
+      fill="url(#assist-intellix-logo-gradient-2)"
+      d="M279.61,164.27l-38.16,60.28-57.39,90.51-35.94,56.67c-5.71,9.01-15.69,14.42-26.38,14.18l-67.49-1.32c-23.92-.42-38.04-26.98-25-47.06l47.78-73.8,130.35-64,72.24-35.46Z"
+    />
+    <path
+      fill="url(#assist-intellix-logo-gradient-3)"
+      d="M304.97,124.24l-25.36,40.02-72.24,35.46-130.35,64L224.74,35.54c12.74-19.65,41.95-18.27,52.7,2.52l28.85,55.77c4.99,9.68,4.51,21.21-1.32,30.41Z"
+    />
   </svg>
 )
 
