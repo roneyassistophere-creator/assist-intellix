@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
 
 import { Logo } from '@/components/Logo/Logo'
-import { ThemeToggle } from '@/components/ThemeToggle'
 import { HeaderNav } from './Nav'
 import { MobileMenu } from './MobileMenu'
 
@@ -41,7 +40,6 @@ export const HeaderClient: React.FC = () => {
           <div className="hidden md:flex">
             <HeaderNav />
           </div>
-          <ThemeToggle />
           <div className="md:hidden">
             <MobileMenu />
           </div>

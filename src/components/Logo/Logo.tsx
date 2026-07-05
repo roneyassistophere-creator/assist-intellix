@@ -5,14 +5,21 @@ import siteConfig from '@/config/site'
 
 // Assist Intellix brand mark. Same artwork in light and dark mode — the gradient
 // fill already has enough contrast against both backgrounds.
-const LogoMark = () => (
+export const LogoMark = ({
+  className,
+  style,
+}: {
+  className?: string
+  style?: React.CSSProperties
+}) => (
   <svg
     width="32"
     height="32"
     viewBox="0 0 500 500"
     xmlns="http://www.w3.org/2000/svg"
     aria-hidden="true"
-    className="shrink-0"
+    className={clsx('shrink-0', className)}
+    style={style}
   >
     <defs>
       <linearGradient

@@ -72,6 +72,7 @@ export interface Config {
     media: Media;
     categories: Category;
     users: User;
+    'automation-requests': AutomationRequest;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -89,6 +90,7 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
+    'automation-requests': AutomationRequestsSelect<false> | AutomationRequestsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -361,6 +363,32 @@ export interface User {
     | null;
   password?: string | null;
   collection: 'users';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "automation-requests".
+ */
+export interface AutomationRequest {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  prompt: string;
+  tool:
+    | 'workflow-automation'
+    | 'ai-chatbots'
+    | 'crm-automation'
+    | 'custom-ai-agents'
+    | 'rpa'
+    | 'email-marketing-automation';
+  wantsPlan?: boolean | null;
+  /**
+   * File names the visitor noted as context (not uploaded, informational only).
+   */
+  attachments?: string | null;
+  status: 'new' | 'contacted' | 'closed';
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -742,6 +770,10 @@ export interface PayloadLockedDocument {
         value: number | User;
       } | null)
     | ({
+        relationTo: 'automation-requests';
+        value: number | AutomationRequest;
+      } | null)
+    | ({
         relationTo: 'redirects';
         value: number | Redirect;
       } | null)
@@ -983,6 +1015,22 @@ export interface UsersSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "automation-requests_select".
+ */
+export interface AutomationRequestsSelect<T extends boolean = true> {
+  name?: T;
+  email?: T;
+  phone?: T;
+  prompt?: T;
+  tool?: T;
+  wantsPlan?: T;
+  attachments?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

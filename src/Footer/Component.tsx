@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import React from 'react'
 
-import { ThemeSelector } from '@/providers/Theme/ThemeSelector'
 import { Logo } from '@/components/Logo/Logo'
 import siteConfig from '@/config/site'
 
@@ -9,7 +8,7 @@ export function Footer() {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className="mt-auto border-t border-border bg-black dark:bg-card text-white">
+    <footer className="snap-start snap-always scroll-mt-(--header-height,0px) mt-auto border-t border-border bg-black dark:bg-card text-white">
       <div className="container py-12">
         {/* Top row: logo + link groups */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
@@ -41,13 +40,12 @@ export function Footer() {
           ))}
         </div>
 
-        {/* Bottom row: copyright + theme selector */}
+        {/* Bottom row: copyright */}
         <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-xs text-white/40">
             &copy; {currentYear} {siteConfig.org.legalName || siteConfig.name}. All rights
             reserved.
           </p>
-          <ThemeSelector />
         </div>
       </div>
     </footer>

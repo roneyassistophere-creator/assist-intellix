@@ -4,6 +4,7 @@ import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 
+import { AutomationRequests } from './collections/AutomationRequests'
 import { Categories } from './collections/Categories'
 import { Media } from './collections/Media'
 import { PageSEO } from './collections/PageSEO'
@@ -46,7 +47,7 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/payload',
     },
   }),
-  collections: [PageSEO, Posts, Media, Categories, Users],
+  collections: [PageSEO, Posts, Media, Categories, Users, AutomationRequests],
   cors: [getServerSideURL()].filter(Boolean),
   globals: [],
   plugins,
