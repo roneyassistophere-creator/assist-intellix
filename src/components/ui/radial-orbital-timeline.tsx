@@ -25,6 +25,14 @@ interface RadialOrbitalTimelineProps {
   timelineData: TimelineItem[]
 }
 
+// Must match the node dots' own `duration-700` rotation exactly (see the node
+// div's className below) — and use the same default easing Tailwind applies
+// alongside `transition-all` (cubic-bezier(0.4,0,0.2,1)) — so the expanded
+// card's slide/fade finishes at the same moment the dot physically arrives
+// at/leaves the top position, instead of racing ahead of it.
+const NODE_ROTATION_MS = 700
+const NODE_ROTATION_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)'
+
 export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTimelineProps) {
   const [expandedItems, setExpandedItems] = useState<Record<number, boolean>>({})
   const [viewMode] = useState<'orbital'>('orbital')
@@ -37,6 +45,19 @@ export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTim
   const containerRef = useRef<HTMLDivElement>(null)
   const orbitRef = useRef<HTMLDivElement>(null)
   const nodeRefs = useRef<Record<number, HTMLDivElement | null>>({})
+  const userSelectedRef = useRef(false)
+
+  // The expanded card is rendered once, independent of any single node's own
+  // `transition-all duration-700` rotation animation — attaching it to whichever
+  // node div is currently expanded (the previous approach) meant it vanished
+  // instantly on one node and reappeared instantly on another, mid-rotation.
+  // These two slots hold the outgoing and incoming card during the ~320ms
+  // crossfade/slide so it reads as a single carousel instead of a hard cut.
+  const [displayedItem, setDisplayedItem] = useState<TimelineItem | null>(null)
+  const [outgoingItem, setOutgoingItem] = useState<TimelineItem | null>(null)
+  const [cardDirection, setCardDirection] = useState<'forward' | 'backward'>('forward')
+  const displayedItemRef = useRef<TimelineItem | null>(null)
+  const cardTransitionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // A static scale on the orbit's container (no CSS transition on this element)
   // shrinks the whole orbit uniformly on mobile. Driving the per-node `radius`
@@ -52,6 +73,7 @@ export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTim
 
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === containerRef.current || e.target === orbitRef.current) {
+      userSelectedRef.current = true
       setExpandedItems({})
       setActiveNodeId(null)
       setPulseEffect({})
@@ -60,6 +82,7 @@ export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTim
   }
 
   const toggleItem = (id: number) => {
+    userSelectedRef.current = true
     setExpandedItems((prev) => {
       const newState = { ...prev }
       Object.keys(newState).forEach((key) => {
@@ -121,6 +144,65 @@ export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTim
     setRotationAngle(270 - targetAngle)
   }
 
+  // By default, one card is always open so the section reads as populated rather
+  // than an empty ring — it auto-advances through the nodes one at a time until
+  // the user makes their own selection (click a node or the background), at
+  // which point `userSelectedRef` permanently hands control over to them. The
+  // section mounts with the rest of the homepage, long before it's scrolled
+  // into view, so the recurring cycle only starts once it's actually visible —
+  // and fires one quick advance right away so a first-time viewer catches the
+  // movement instead of staring at a static card for a full interval.
+  useEffect(() => {
+    if (timelineData.length === 0) return
+
+    const selectByIndex = (index: number) => {
+      const item = timelineData[index]
+      if (!item) return
+      setExpandedItems({ [item.id]: true })
+      setActiveNodeId(item.id)
+      setAutoRotate(false)
+      const newPulseEffect: Record<number, boolean> = {}
+      item.relatedIds.forEach((relId) => {
+        newPulseEffect[relId] = true
+      })
+      setPulseEffect(newPulseEffect)
+      centerViewOnNode(item.id)
+    }
+
+    let index = 0
+    selectByIndex(index)
+
+    const CYCLE_MS = 2000
+    let intervalId: ReturnType<typeof setInterval> | null = null
+    let revealTimeoutId: ReturnType<typeof setTimeout> | null = null
+
+    const advance = () => {
+      if (userSelectedRef.current) return
+      index = (index + 1) % timelineData.length
+      selectByIndex(index)
+    }
+
+    const container = containerRef.current
+    const observer = container
+      ? new IntersectionObserver(
+          ([entry]) => {
+            if (!entry.isIntersecting || intervalId) return
+            revealTimeoutId = setTimeout(advance, 350)
+            intervalId = setInterval(advance, CYCLE_MS)
+          },
+          { threshold: 0.5 },
+        )
+      : null
+    if (container && observer) observer.observe(container)
+
+    return () => {
+      if (intervalId) clearInterval(intervalId)
+      if (revealTimeoutId) clearTimeout(revealTimeoutId)
+      observer?.disconnect()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const calculateNodePosition = (index: number, total: number) => {
     const angle = ((index / total) * 360 + rotationAngle) % 360
     const radius = 200
@@ -159,13 +241,130 @@ export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTim
     }
   }
 
+  const activeItemId = timelineData.find((item) => expandedItems[item.id])?.id ?? null
+
+  // Cross-fades the expanded card between items: whenever the expanded item
+  // changes, the previous one is kept mounted just long enough to slide/fade
+  // out while the next slides/fades in from the side matching its position on
+  // the orbit. The nodes sit on a circle with no real "first" or "last" — so
+  // direction is the *shortest way around* (e.g. the last node back to the
+  // first is one step forward, not a long way backward), not a plain index
+  // comparison, which treated the array's two ends as a hard boundary and
+  // made that one wrap-around click slide in from the wrong side.
+  useEffect(() => {
+    const current = displayedItemRef.current
+    if ((current?.id ?? null) === activeItemId) return
+
+    const nextItem =
+      activeItemId !== null ? (timelineData.find((i) => i.id === activeItemId) ?? null) : null
+
+    if (current) {
+      const total = timelineData.length
+      const fromIndex = timelineData.findIndex((i) => i.id === current.id)
+      const toIndex = nextItem ? timelineData.findIndex((i) => i.id === nextItem.id) : fromIndex
+      const circularDiff = (((toIndex - fromIndex) % total) + total) % total
+      const shortestDiff = circularDiff > total / 2 ? circularDiff - total : circularDiff
+      setCardDirection(shortestDiff >= 0 ? 'forward' : 'backward')
+      setOutgoingItem(current)
+      if (cardTransitionTimeoutRef.current) clearTimeout(cardTransitionTimeoutRef.current)
+      cardTransitionTimeoutRef.current = setTimeout(() => setOutgoingItem(null), NODE_ROTATION_MS)
+    }
+
+    displayedItemRef.current = nextItem
+    setDisplayedItem(nextItem)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeItemId])
+
+  useEffect(() => {
+    return () => {
+      if (cardTransitionTimeoutRef.current) clearTimeout(cardTransitionTimeoutRef.current)
+    }
+  }, [])
+
+  const renderExpandedCard = (item: TimelineItem) => (
+    <>
+      <div className="absolute -top-3 left-1/2 h-3 w-px -translate-x-1/2 bg-white/50" />
+      <Card className="w-full overflow-visible border-white/30 bg-black/90 shadow-xl shadow-white/10 backdrop-blur-lg">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <Badge className={`px-2 text-xs ${getStatusStyles(item.status)}`}>
+              {item.status === 'completed'
+                ? 'COMPLETE'
+                : item.status === 'in-progress'
+                  ? 'IN PROGRESS'
+                  : 'PENDING'}
+            </Badge>
+            <span className="font-mono text-xs text-white/50">{item.date}</span>
+          </div>
+          <CardTitle className="mt-2 text-sm text-white">{item.title}</CardTitle>
+        </CardHeader>
+        <CardContent className="text-xs text-white/80">
+          <p>{item.content}</p>
+
+          <div className="mt-4 border-t border-white/10 pt-3">
+            <div className="mb-1 flex items-center justify-between text-xs">
+              <span className="flex items-center">
+                <Zap size={10} className="mr-1" />
+                Energy Level
+              </span>
+              <span className="font-mono">{item.energy}%</span>
+            </div>
+            <div className="h-1 w-full overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
+                style={{ width: `${item.energy}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {item.relatedIds.length > 0 && (
+            <div className="mt-4 border-t border-white/10 pt-3">
+              <div className="mb-2 flex items-center">
+                <Link size={10} className="mr-1 text-white/70" />
+                <h4 className="text-xs font-medium tracking-wider text-white/70 uppercase">
+                  Connected Nodes
+                </h4>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {item.relatedIds.map((relatedId) => {
+                  const relatedItem = timelineData.find((i) => i.id === relatedId)
+                  return (
+                    <Button
+                      key={relatedId}
+                      variant="outline"
+                      size="sm"
+                      className="flex h-6 items-center rounded-none border-white/20 bg-transparent px-2 py-0 text-xs text-white/80 transition-all hover:bg-white/10 hover:text-white"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleItem(relatedId)
+                      }}
+                    >
+                      {relatedItem?.title}
+                      <ArrowRight size={8} className="ml-1 text-white/60" />
+                    </Button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </>
+  )
+
   return (
     <div
       className="snap-start snap-always scroll-mt-(--header-height,0px) flex min-h-[calc(100dvh-var(--header-height,0px))] w-full flex-col items-center justify-center overflow-hidden bg-black"
+      // The fixed composer overlays the bottom of this section once docked, so
+      // centering needs to happen within the space still visible above it — not
+      // the section's full height — or the content reads as centered too low.
+      // `--composer-height` is published by AutomationHero from the composer's
+      // live rendered height, the same way `--header-height` sizes the top.
+      style={{ paddingBottom: 'var(--composer-height, 0px)' }}
       ref={containerRef}
       onClick={handleContainerClick}
     >
-      <div className="relative flex h-full w-full max-w-4xl -translate-y-8 items-center justify-center sm:-translate-y-12">
+      <div className="relative flex h-full w-full max-w-4xl items-center justify-center">
         <div
           className="absolute flex h-full w-full items-center justify-center"
           ref={orbitRef}
@@ -252,80 +451,73 @@ export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTim
                 >
                   {item.title}
                 </div>
-
-                {isExpanded && (
-                  <Card className="absolute top-20 left-1/2 w-64 -translate-x-1/2 overflow-visible border-white/30 bg-black/90 shadow-xl shadow-white/10 backdrop-blur-lg">
-                    <div className="absolute -top-3 left-1/2 h-3 w-px -translate-x-1/2 bg-white/50"></div>
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between">
-                        <Badge className={`px-2 text-xs ${getStatusStyles(item.status)}`}>
-                          {item.status === 'completed'
-                            ? 'COMPLETE'
-                            : item.status === 'in-progress'
-                              ? 'IN PROGRESS'
-                              : 'PENDING'}
-                        </Badge>
-                        <span className="font-mono text-xs text-white/50">{item.date}</span>
-                      </div>
-                      <CardTitle className="mt-2 text-sm text-white">{item.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-xs text-white/80">
-                      <p>{item.content}</p>
-
-                      <div className="mt-4 border-t border-white/10 pt-3">
-                        <div className="mb-1 flex items-center justify-between text-xs">
-                          <span className="flex items-center">
-                            <Zap size={10} className="mr-1" />
-                            Energy Level
-                          </span>
-                          <span className="font-mono">{item.energy}%</span>
-                        </div>
-                        <div className="h-1 w-full overflow-hidden rounded-full bg-white/10">
-                          <div
-                            className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
-                            style={{ width: `${item.energy}%` }}
-                          ></div>
-                        </div>
-                      </div>
-
-                      {item.relatedIds.length > 0 && (
-                        <div className="mt-4 border-t border-white/10 pt-3">
-                          <div className="mb-2 flex items-center">
-                            <Link size={10} className="mr-1 text-white/70" />
-                            <h4 className="text-xs font-medium tracking-wider text-white/70 uppercase">
-                              Connected Nodes
-                            </h4>
-                          </div>
-                          <div className="flex flex-wrap gap-1">
-                            {item.relatedIds.map((relatedId) => {
-                              const relatedItem = timelineData.find((i) => i.id === relatedId)
-                              return (
-                                <Button
-                                  key={relatedId}
-                                  variant="outline"
-                                  size="sm"
-                                  className="flex h-6 items-center rounded-none border-white/20 bg-transparent px-2 py-0 text-xs text-white/80 transition-all hover:bg-white/10 hover:text-white"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    toggleItem(relatedId)
-                                  }}
-                                >
-                                  {relatedItem?.title}
-                                  <ArrowRight size={8} className="ml-1 text-white/60" />
-                                </Button>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                )}
               </div>
             )
           })}
+
+          {/* Fixed carousel slot for the expanded card — anchored at the "top"
+              orbit position (angle 270, same spot the previously-selected node
+              always rotates to), independent of the nodes' own rotation so
+              switching cards is a clean crossfade/slide, not tied to whichever
+              node div happens to currently be mid-rotation. */}
+          <div className="absolute z-30 w-64" style={{ transform: 'translate(0px, -200px)' }}>
+            <div className="relative">
+              {outgoingItem && (
+                <div
+                  key={`out-${outgoingItem.id}`}
+                  className="absolute inset-x-0 top-20"
+                  style={{
+                    animation: `${
+                      cardDirection === 'forward'
+                        ? 'orbit-card-slide-out-left'
+                        : 'orbit-card-slide-out-right'
+                    } ${NODE_ROTATION_MS}ms ${NODE_ROTATION_EASING} forwards`,
+                  }}
+                >
+                  {renderExpandedCard(outgoingItem)}
+                </div>
+              )}
+              {displayedItem && (
+                <div
+                  key={`in-${displayedItem.id}`}
+                  className="absolute inset-x-0 top-20"
+                  style={{
+                    animation: `${
+                      cardDirection === 'forward'
+                        ? 'orbit-card-slide-in-right'
+                        : 'orbit-card-slide-in-left'
+                    } ${NODE_ROTATION_MS}ms ${NODE_ROTATION_EASING} forwards`,
+                  }}
+                >
+                  {renderExpandedCard(displayedItem)}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
+      <style>{`
+        /* Full-width (not a small px nudge) so the outgoing and incoming cards
+           never visually overlap mid-flight — a small offset leaves both
+           mostly stacked in place, double-exposing their text as one fades
+           under the other instead of genuinely passing each other. */
+        @keyframes orbit-card-slide-in-right {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes orbit-card-slide-out-left {
+          from { transform: translateX(0); opacity: 1; }
+          to { transform: translateX(-100%); opacity: 0; }
+        }
+        @keyframes orbit-card-slide-in-left {
+          from { transform: translateX(-100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes orbit-card-slide-out-right {
+          from { transform: translateX(0); opacity: 1; }
+          to { transform: translateX(100%); opacity: 0; }
+        }
+      `}</style>
     </div>
   )
 }

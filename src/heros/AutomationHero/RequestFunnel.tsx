@@ -1,7 +1,7 @@
 'use client'
 
 import type { KeyboardEvent } from 'react'
-import { ArrowLeft, CheckCircle2, Lightbulb, Loader2, Paperclip } from 'lucide-react'
+import { CheckCircle2, Loader2 } from 'lucide-react'
 
 export type FunnelStage = 'name' | 'phone' | 'email' | 'processing' | 'success' | 'error'
 
@@ -13,10 +13,6 @@ export const PROCESSING_STEPS = [
 
 interface RequestFunnelProps {
   stage: FunnelStage
-  promptPreview: string
-  toolLabel: string
-  attachments: string[]
-  wantsPlan: boolean
   name: string
   phone: string
   email: string
@@ -26,16 +22,13 @@ interface RequestFunnelProps {
   errorMessage: string | null
   processingStepIndex: number
   onContinue: () => void
-  onBack: () => void
-  onRetry: () => void
 }
 
+// Pure step content — no recap header, no buttons. `ChatInput` owns the
+// surrounding chrome (card shell, static button row) and the slide/resize
+// animation this content mounts into.
 export function RequestFunnel({
   stage,
-  promptPreview,
-  toolLabel,
-  attachments,
-  wantsPlan,
   name,
   phone,
   email,
@@ -45,8 +38,6 @@ export function RequestFunnel({
   errorMessage,
   processingStepIndex,
   onContinue,
-  onBack,
-  onRetry,
 }: RequestFunnelProps) {
   const isFieldStage = stage === 'name' || stage === 'phone' || stage === 'email'
 
@@ -59,55 +50,29 @@ export function RequestFunnel({
 
   return (
     <div className="flex flex-col">
-      {/* Keeps the original prompt visible, like a message already sent in the chat. */}
-      <div className="border-b border-white/5 px-5 pt-4 pb-3">
-        <p className="text-[10px] font-medium tracking-wide text-[#5a5a5f] uppercase">{toolLabel}</p>
-        <p className="mt-1 line-clamp-2 text-sm text-[#8a8a8f]">{promptPreview}</p>
-        {(attachments.length > 0 || wantsPlan) && (
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {wantsPlan && (
-              <span className="flex items-center gap-1 rounded-full bg-blue-500/15 px-2 py-0.5 text-[11px] text-blue-300">
-                <Lightbulb className="size-3" />
-                Plan requested
-              </span>
-            )}
-            {attachments.map((a) => (
-              <span
-                key={a}
-                className="flex items-center gap-1 rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-[#c0c0c5]"
-              >
-                <Paperclip className="size-3" />
-                {a}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
       {isFieldStage && (
         <div className="px-5 pt-4 pb-2">
           <p className="text-[15px] text-white">
-            {stage === 'name' && "Great — what's your name?"}
-            {stage === 'phone' &&
-              `Thanks${name.trim() ? `, ${name.trim().split(' ')[0]}` : ''}! What's the best number to reach you?`}
-            {stage === 'email' && "Last thing — what's your email address?"}
+            {stage === 'email' && "You'll need your email to request the build."}
+            {stage === 'phone' && "What's the best number to reach you?"}
+            {stage === 'name' && "Last thing — what's your name?"}
           </p>
           <input
             autoFocus
             type={stage === 'email' ? 'email' : stage === 'phone' ? 'tel' : 'text'}
-            value={stage === 'name' ? name : stage === 'phone' ? phone : email}
+            value={stage === 'email' ? email : stage === 'phone' ? phone : name}
             onChange={(e) => {
-              if (stage === 'name') onNameChange(e.target.value)
+              if (stage === 'email') onEmailChange(e.target.value)
               else if (stage === 'phone') onPhoneChange(e.target.value)
-              else onEmailChange(e.target.value)
+              else onNameChange(e.target.value)
             }}
             onKeyDown={handleKeyDown}
             placeholder={
-              stage === 'name'
-                ? 'Your name'
+              stage === 'email'
+                ? 'you@example.com'
                 : stage === 'phone'
                   ? 'Phone number (optional)'
-                  : 'you@example.com'
+                  : 'Your name'
             }
             className="mt-3 w-full border-b border-white/10 bg-transparent pb-2 text-[15px] text-white placeholder-[#5a5a5f] focus:border-blue-400 focus:outline-none"
           />
@@ -126,7 +91,9 @@ export function RequestFunnel({
               ) : (
                 <div className="size-4 shrink-0 rounded-full border border-white/15" />
               )}
-              <span className={`text-sm ${i <= processingStepIndex ? 'text-white' : 'text-[#5a5a5f]'}`}>
+              <span
+                className={`text-sm ${i <= processingStepIndex ? 'text-white' : 'text-[#5a5a5f]'}`}
+              >
                 {label}
               </span>
             </div>
@@ -147,46 +114,6 @@ export function RequestFunnel({
           <p className="text-sm text-red-400">
             {errorMessage || 'Something went wrong. Please try again.'}
           </p>
-        </div>
-      )}
-
-      {isFieldStage && (
-        <div className="flex items-center justify-between px-3 pt-1 pb-3">
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-[#6a6a6f] transition-colors hover:text-white"
-          >
-            <ArrowLeft className="size-3.5" />
-            Back
-          </button>
-          <button
-            type="button"
-            onClick={onContinue}
-            className="flex items-center gap-2 rounded-full bg-[#1488fc] px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-[#1a94ff] active:scale-95"
-          >
-            {stage === 'email' ? 'Submit' : 'Continue'}
-          </button>
-        </div>
-      )}
-
-      {stage === 'error' && (
-        <div className="flex items-center justify-center gap-2 px-3 pt-1 pb-3">
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-[#6a6a6f] transition-colors hover:text-white"
-          >
-            <ArrowLeft className="size-3.5" />
-            Back
-          </button>
-          <button
-            type="button"
-            onClick={onRetry}
-            className="flex items-center gap-2 rounded-full bg-[#1488fc] px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-[#1a94ff] active:scale-95"
-          >
-            Try again
-          </button>
         </div>
       )}
     </div>

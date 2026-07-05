@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
+  ArrowLeft,
   Bot,
   Check,
   ChevronDown,
@@ -59,7 +60,9 @@ function ToolSelector({
       >
         {toolIcons[selected.value]}
         <span className="max-w-[90px] truncate sm:max-w-none">{selected.label}</span>
-        <ChevronDown className={`size-3.5 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown
+          className={`size-3.5 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+        />
       </button>
 
       {isOpen && (
@@ -76,7 +79,9 @@ function ToolSelector({
                   key={tool.value}
                   onClick={() => handleSelect(tool)}
                   className={`w-full flex items-center gap-3 px-2.5 py-2 rounded-lg text-left transition-all duration-150 ${
-                    selected.value === tool.value ? 'bg-white/10 text-white' : 'text-[#a0a0a5] hover:bg-white/5 hover:text-white'
+                    selected.value === tool.value
+                      ? 'bg-white/10 text-white'
+                      : 'text-[#a0a0a5] hover:bg-white/5 hover:text-white'
                   }`}
                 >
                   <div className="flex-shrink-0">{toolIcons[tool.value]}</div>
@@ -91,7 +96,9 @@ function ToolSelector({
                     </div>
                     <span className="text-[11px] text-[#6a6a6f]">{tool.description}</span>
                   </div>
-                  {selected.value === tool.value && <Check className="size-4 text-blue-400 flex-shrink-0" />}
+                  {selected.value === tool.value && (
+                    <Check className="size-4 text-blue-400 flex-shrink-0" />
+                  )}
                 </button>
               ))}
             </div>
@@ -131,16 +138,34 @@ function ChatInput({
   const [showHint, setShowHint] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const incomingRef = useRef<HTMLDivElement>(null)
+  const [regionHeight, setRegionHeight] = useState<number>()
 
   // 'prompt' = the normal textarea/toolbar view; anything else = a step of the
   // inline contact-detail funnel that replaces it once "Build now" is clicked.
-  const [stage, setStage] = useState<'prompt' | FunnelStage>('prompt')
+  type Step = 'prompt' | FunnelStage
+  const [stage, setStage] = useState<Step>('prompt')
+  // The previously-displayed step, kept mounted just long enough to play its
+  // slide-out animation while `stage` (rendered via `goTo` below) slides in.
+  const [prevStage, setPrevStage] = useState<Step | null>(null)
+  const [direction, setDirection] = useState<'forward' | 'backward'>('forward')
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [processingStepIndex, setProcessingStepIndex] = useState(0)
   const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const transitionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Every stage change goes through here so the outgoing screen can slide out
+  // to the left (forward) or right (backward) while the next one slides in.
+  const goTo = (next: Step, dir: 'forward' | 'backward') => {
+    if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current)
+    setDirection(dir)
+    setPrevStage(stage)
+    setStage(next)
+    transitionTimeoutRef.current = setTimeout(() => setPrevStage(null), 320)
+  }
 
   useEffect(() => {
     const textarea = textareaRef.current
@@ -150,9 +175,24 @@ function ChatInput({
     }
   }, [value, stage])
 
+  // Tracks the incoming step's natural height so the sliding viewport can
+  // animate its own `height` to match, instead of snapping to it instantly.
+  // Covers both stage-to-stage height differences and in-stage resizing
+  // (textarea growth, attachment chips) through the same mechanism.
+  useLayoutEffect(() => {
+    const el = incomingRef.current
+    if (!el) return
+    const updateHeight = () => setRegionHeight(el.scrollHeight)
+    updateHeight()
+    const observer = new ResizeObserver(updateHeight)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [stage, value, attachments, showHint, errorMessage, processingStepIndex])
+
   useEffect(() => {
     return () => {
       if (resetTimeoutRef.current) clearTimeout(resetTimeoutRef.current)
+      if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current)
     }
   }, [])
 
@@ -164,7 +204,7 @@ function ChatInput({
     }
     setShowHint(false)
     setErrorMessage(null)
-    setStage('name')
+    goTo('email', 'forward')
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -178,7 +218,7 @@ function ChatInput({
   // Going "back" during the funnel must NOT clear already-entered values (see
   // handleBack below); this is deliberately the only path that does.
   const resetFunnel = () => {
-    setStage('prompt')
+    goTo('prompt', 'backward')
     setName('')
     setPhone('')
     setEmail('')
@@ -186,18 +226,18 @@ function ChatInput({
   }
 
   // Steps back exactly one stage, preserving whatever was already typed in the
-  // other fields — e.g. going from "email" back to "phone" to fix a typo doesn't
-  // lose the email or name already entered.
+  // other fields — e.g. going from "name" back to "phone" to fix a typo doesn't
+  // lose the phone or email already entered. Order is email -> phone -> name.
   const handleBack = () => {
     setErrorMessage(null)
-    if (stage === 'name') setStage('prompt')
-    else if (stage === 'phone') setStage('name')
-    else if (stage === 'email') setStage('phone')
-    else if (stage === 'error') setStage('email')
+    if (stage === 'email') goTo('prompt', 'backward')
+    else if (stage === 'phone') goTo('email', 'backward')
+    else if (stage === 'name') goTo('phone', 'backward')
+    else if (stage === 'error') goTo('name', 'backward')
   }
 
   const submitRequest = async () => {
-    setStage('processing')
+    goTo('processing', 'forward')
     setProcessingStepIndex(0)
     setErrorMessage(null)
 
@@ -233,157 +273,275 @@ function ChatInput({
       setProcessingStepIndex(2)
       await submitPromise
       await wait(500)
-      setStage('success')
+      goTo('success', 'forward')
       resetTimeoutRef.current = setTimeout(() => {
         onSuccess()
         resetFunnel()
       }, SUCCESS_RESET_DELAY_MS)
     } catch (err) {
-      setStage('error')
-      setErrorMessage(err instanceof Error ? err.message : 'Something went wrong. Please try again later.')
+      goTo('error', 'forward')
+      setErrorMessage(
+        err instanceof Error ? err.message : 'Something went wrong. Please try again later.',
+      )
     }
   }
 
+  // Order is email -> phone -> name -> submit.
   const handleFunnelContinue = () => {
-    if (stage === 'name') {
-      if (!name.trim()) {
-        setErrorMessage('Please enter your name.')
+    if (stage === 'email') {
+      if (!EMAIL_RE.test(email.trim())) {
+        setErrorMessage('Please enter a valid email address.')
         return
       }
       setErrorMessage(null)
-      setStage('phone')
+      goTo('phone', 'forward')
     } else if (stage === 'phone') {
       setErrorMessage(null)
-      setStage('email')
-    } else if (stage === 'email') {
-      if (!EMAIL_RE.test(email.trim())) {
-        setErrorMessage('Please enter a valid email address.')
+      goTo('name', 'forward')
+    } else if (stage === 'name') {
+      if (!name.trim()) {
+        setErrorMessage('Please enter your name.')
         return
       }
       submitRequest()
     }
   }
 
+  // Only the swappable "input box" content — the card shell, and the button
+  // row below it, are static and live outside this function (see
+  // `renderButtonRow` and the returned JSX) so only this part slides.
+  const renderStageContent = (s: Step) =>
+    s === 'prompt' ? (
+      <>
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value)
+            if (showHint) setShowHint(false)
+          }}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          className="w-full resize-none bg-transparent text-[15px] text-white placeholder-[#5a5a5f] px-5 pt-5 pb-3 focus:outline-none min-h-[80px] max-h-[200px]"
+          style={{ height: '80px' }}
+        />
+
+        {showHint && (
+          <p className="px-5 pb-1 text-xs text-amber-400">
+            Describe what you&apos;d like to automate first.
+          </p>
+        )}
+
+        {attachments.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 px-5 pb-2">
+            {attachments.map((name) => (
+              <span
+                key={name}
+                className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1 text-xs text-[#c0c0c5]"
+              >
+                <Paperclip className="size-3 shrink-0" />
+                <span className="max-w-[140px] truncate">{name}</span>
+                <button
+                  type="button"
+                  onClick={() => onRemoveAttachment(name)}
+                  className="text-[#6a6a6f] hover:text-white"
+                  aria-label={`Remove ${name}`}
+                >
+                  <X className="size-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+      </>
+    ) : (
+      <RequestFunnel
+        stage={s as FunnelStage}
+        name={name}
+        phone={phone}
+        email={email}
+        onNameChange={setName}
+        onPhoneChange={setPhone}
+        onEmailChange={setEmail}
+        errorMessage={errorMessage}
+        processingStepIndex={processingStepIndex}
+        onContinue={handleFunnelContinue}
+      />
+    )
+
+  // Static button row — swaps its contents instantly per stage, does not
+  // slide with the input box above it.
+  const renderButtonRow = (s: Step) => {
+    if (s === 'prompt') {
+      return (
+        <>
+          <div className="flex items-center gap-1">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                const files = Array.from(e.target.files ?? [])
+                if (files.length) onAddAttachments(files.map((file) => file.name))
+                e.target.value = ''
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center justify-center size-8 rounded-full bg-white/[0.08] hover:bg-white/[0.12] text-[#8a8a8f] hover:text-white transition-all duration-200 active:scale-95"
+              aria-label="Add context"
+            >
+              <Plus className="size-4" />
+            </button>
+            <ToolSelector selected={selectedTool} onSelect={onToolChange} />
+          </div>
+
+          <div className="flex-1" />
+
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={onTogglePlan}
+              aria-label="Request an implementation plan"
+              aria-pressed={wantsPlan}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium transition-all duration-200 ${
+                wantsPlan
+                  ? 'bg-blue-500/15 text-blue-300'
+                  : 'text-[#6a6a6f] hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Lightbulb className="size-4" />
+              <span className="hidden sm:inline">Plan</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleBuildNow}
+              aria-label="Build now"
+              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-[#1488fc] hover:bg-[#1a94ff] text-white transition-all duration-200 active:scale-95 shadow-[0_0_20px_rgba(20,136,252,0.3)]"
+            >
+              <span className="hidden sm:inline">Build now</span>
+              <SendHorizontal className="size-4" />
+            </button>
+          </div>
+        </>
+      )
+    }
+
+    if (s === 'email' || s === 'phone' || s === 'name') {
+      return (
+        <>
+          <button
+            type="button"
+            onClick={handleBack}
+            className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-[#6a6a6f] transition-colors hover:text-white"
+          >
+            <ArrowLeft className="size-3.5" />
+            Back
+          </button>
+          <button
+            type="button"
+            onClick={handleFunnelContinue}
+            className="flex items-center gap-2 rounded-full bg-[#1488fc] px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-[#1a94ff] active:scale-95"
+          >
+            {s === 'name' ? 'Submit' : 'Continue'}
+          </button>
+        </>
+      )
+    }
+
+    if (s === 'error') {
+      return (
+        <div className="flex w-full items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={handleBack}
+            className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-[#6a6a6f] transition-colors hover:text-white"
+          >
+            <ArrowLeft className="size-3.5" />
+            Back
+          </button>
+          <button
+            type="button"
+            onClick={submitRequest}
+            className="flex items-center gap-2 rounded-full bg-[#1488fc] px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-[#1a94ff] active:scale-95"
+          >
+            Try again
+          </button>
+        </div>
+      )
+    }
+
+    // 'processing' | 'success' — no buttons.
+    return null
+  }
+
+  const buttonRow = renderButtonRow(stage)
+
   return (
     <div className="relative w-full max-w-[680px] mx-auto">
       <div className="absolute -inset-[1px] rounded-2xl bg-linear-to-b from-white/[0.08] to-transparent pointer-events-none" />
       <div className="relative rounded-2xl bg-[#1e1e22] ring-1 ring-white/[0.08] shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_2px_20px_rgba(0,0,0,0.4)]">
-        {stage === 'prompt' ? (
-          <>
-            <textarea
-              ref={textareaRef}
-              value={value}
-              onChange={(e) => {
-                onChange(e.target.value)
-                if (showHint) setShowHint(false)
+        <style>{`
+          @keyframes funnel-slide-in-right {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+          }
+          @keyframes funnel-slide-out-left {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(-100%); opacity: 0; }
+          }
+          @keyframes funnel-slide-in-left {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+          }
+          @keyframes funnel-slide-out-right {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+          }
+        `}</style>
+        {/* `overflow-hidden` can stay on permanently now — `ToolSelector`'s
+            upward-opening dropdown lives in the separate, static button row
+            below, not in this sliding viewport, so it's never clipped. */}
+        <div
+          className="relative overflow-hidden"
+          style={{
+            height: regionHeight,
+            transition: 'height 320ms cubic-bezier(0.32,0.72,0,1)',
+          }}
+        >
+          {prevStage !== null && (
+            <div
+              className="absolute inset-x-0 top-0 z-0"
+              style={{
+                animation: `${direction === 'forward' ? 'funnel-slide-out-left' : 'funnel-slide-out-right'} 320ms cubic-bezier(0.32,0.72,0,1) forwards`,
               }}
-              onKeyDown={handleKeyDown}
-              placeholder={placeholder}
-              className="w-full resize-none bg-transparent text-[15px] text-white placeholder-[#5a5a5f] px-5 pt-5 pb-3 focus:outline-none min-h-[80px] max-h-[200px]"
-              style={{ height: '80px' }}
-            />
-
-            {showHint && (
-              <p className="px-5 pb-1 text-xs text-amber-400">
-                Describe what you&apos;d like to automate first.
-              </p>
-            )}
-
-            {attachments.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 px-5 pb-2">
-                {attachments.map((name) => (
-                  <span
-                    key={name}
-                    className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1 text-xs text-[#c0c0c5]"
-                  >
-                    <Paperclip className="size-3 shrink-0" />
-                    <span className="max-w-[140px] truncate">{name}</span>
-                    <button
-                      type="button"
-                      onClick={() => onRemoveAttachment(name)}
-                      className="text-[#6a6a6f] hover:text-white"
-                      aria-label={`Remove ${name}`}
-                    >
-                      <X className="size-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-
-            <div className="flex items-center justify-between px-3 pb-3 pt-1">
-              <div className="flex items-center gap-1">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => {
-                    const files = Array.from(e.target.files ?? [])
-                    if (files.length) onAddAttachments(files.map((file) => file.name))
-                    e.target.value = ''
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center justify-center size-8 rounded-full bg-white/[0.08] hover:bg-white/[0.12] text-[#8a8a8f] hover:text-white transition-all duration-200 active:scale-95"
-                  aria-label="Add context"
-                >
-                  <Plus className="size-4" />
-                </button>
-                <ToolSelector selected={selectedTool} onSelect={onToolChange} />
-              </div>
-
-              <div className="flex-1" />
-
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={onTogglePlan}
-                  aria-label="Request an implementation plan"
-                  aria-pressed={wantsPlan}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium transition-all duration-200 ${
-                    wantsPlan
-                      ? 'bg-blue-500/15 text-blue-300'
-                      : 'text-[#6a6a6f] hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <Lightbulb className="size-4" />
-                  <span className="hidden sm:inline">Plan</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleBuildNow}
-                  aria-label="Build now"
-                  className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-[#1488fc] hover:bg-[#1a94ff] text-white transition-all duration-200 active:scale-95 shadow-[0_0_20px_rgba(20,136,252,0.3)]"
-                >
-                  <span className="hidden sm:inline">Build now</span>
-                  <SendHorizontal className="size-4" />
-                </button>
-              </div>
+            >
+              {renderStageContent(prevStage)}
             </div>
-          </>
-        ) : (
-          <RequestFunnel
-            stage={stage}
-            promptPreview={value}
-            toolLabel={selectedTool.label}
-            attachments={attachments}
-            wantsPlan={wantsPlan}
-            name={name}
-            phone={phone}
-            email={email}
-            onNameChange={setName}
-            onPhoneChange={setPhone}
-            onEmailChange={setEmail}
-            errorMessage={errorMessage}
-            processingStepIndex={processingStepIndex}
-            onContinue={handleFunnelContinue}
-            onBack={handleBack}
-            onRetry={submitRequest}
-          />
+          )}
+          {/* Must be `position: relative` (not static) so it both sizes the
+              container (unlike the outgoing layer, it stays in normal flow)
+              and paints above the outgoing layer — a static element paints
+              *underneath* an absolutely-positioned sibling regardless of DOM
+              order, which is what silently broke the slide before: the old
+              screen sat on top the whole time, so it only ever looked like a
+              fade-in-place instead of a real slide-past. */}
+          <div
+            ref={incomingRef}
+            key={stage}
+            className="relative z-10"
+            style={{
+              animation: `${direction === 'forward' ? 'funnel-slide-in-right' : 'funnel-slide-in-left'} 320ms cubic-bezier(0.32,0.72,0,1) forwards`,
+            }}
+          >
+            {renderStageContent(stage)}
+          </div>
+        </div>
+        {buttonRow && (
+          <div className="flex items-center justify-between px-3 pb-3 pt-1">{buttonRow}</div>
         )}
       </div>
     </div>
@@ -408,8 +566,7 @@ function RayBackground() {
         <div
           className="absolute w-full h-full rounded-full -mt-[13px]"
           style={{
-            background:
-              'radial-gradient(43.89% 25.74% at 50.02% 97.24%, #111114 0%, #0f0f0f 100%)',
+            background: 'radial-gradient(43.89% 25.74% at 50.02% 97.24%, #111114 0%, #0f0f0f 100%)',
             border: '16px solid white',
             transform: 'rotate(180deg)',
             zIndex: 5,
@@ -462,11 +619,54 @@ export function AutomationHero({
   const [docked, setDocked] = useState(false)
   const [footerNear, setFooterNear] = useState(false)
   const [topPx, setTopPx] = useState<number | null>(null)
+  // Even though `topPx` resolves to its correct first value within the same
+  // synchronous mount cascade (see the layout effects below), the browser
+  // still gets a chance to register a style flush showing the CSS-class
+  // fallback (`top-[50%]`) before that — so the `top` CSS transition genuinely
+  // animates from that stale fallback to the real position on first load,
+  // reading as an unwanted "slide into place" (most visible on mobile, where
+  // it now always resolves straight to the bottom dock). Gating the `top`
+  // transition out until a couple of frames after mount means the very first
+  // position applies instantly, while later, real changes (scroll dock/undock,
+  // the keyboard opening) still animate smoothly as intended.
+  const [transitionReady, setTransitionReady] = useState(false)
 
   const heroRef = useRef<HTMLDivElement>(null)
   const anchorRef = useRef<HTMLDivElement>(null)
   const composerRef = useRef<HTMLDivElement>(null)
   const dockedRef = useRef(docked)
+  const isMobileRef = useRef(false)
+
+  useEffect(() => {
+    let rafId2: number | null = null
+    const rafId1 = requestAnimationFrame(() => {
+      rafId2 = requestAnimationFrame(() => setTransitionReady(true))
+    })
+    return () => {
+      cancelAnimationFrame(rafId1)
+      if (rafId2 !== null) cancelAnimationFrame(rafId2)
+    }
+  }, [])
+
+  // On mobile there's no "embedded, scrolls into a fixed dock" phase — the
+  // composer just always sits fixed at the bottom, from first paint. Forcing
+  // `docked` true here (and in the anchor observer below) skips the
+  // embedded-position formula entirely on mobile. Must be a *layout* effect,
+  // not a passive one: it needs to resolve before the browser's first paint,
+  // in the same synchronous flush as the docked-sync layout effect below —
+  // otherwise mobile briefly paints at the embedded fallback position first,
+  // then visibly slides down to the bottom over the dock/undock CSS
+  // transition, instead of just starting there.
+  useLayoutEffect(() => {
+    const updateIsMobile = () => {
+      const mobile = window.innerWidth < 640
+      isMobileRef.current = mobile
+      if (mobile) setDocked(true)
+    }
+    updateIsMobile()
+    window.addEventListener('resize', updateIsMobile)
+    return () => window.removeEventListener('resize', updateIsMobile)
+  }, [])
 
   // Scope full-page scroll-snap to this (homepage) page only.
   useEffect(() => {
@@ -500,7 +700,14 @@ export function AutomationHero({
   const recomputeTop = useCallback(() => {
     if (dockedRef.current) {
       const height = composerRef.current?.getBoundingClientRect().height ?? 0
-      setTopPx(window.innerHeight - height)
+      // `window.innerHeight` is the *layout* viewport and, on mobile Safari in
+      // particular, does not shrink when the on-screen keyboard opens — only
+      // the *visual* viewport does. Anchoring to `visualViewport`'s bottom
+      // edge instead means the composer sits right above the keyboard rather
+      // than being covered by it, the way a real chat app's input bar does.
+      const viewport = window.visualViewport
+      const viewportBottom = viewport ? viewport.height + viewport.offsetTop : window.innerHeight
+      setTopPx(viewportBottom - height)
     } else {
       // Compute the anchor's resting position from a scroll-invariant offset rather
       // than its live getBoundingClientRect().top. The anchor's position *within*
@@ -544,6 +751,9 @@ export function AutomationHero({
   // scroll — doing so would fight the `top` CSS transition (a continuously-reassigned
   // target never lets the transition converge, then the docked flip jumps the rest of
   // the way), which is what caused the previous "rises, then independently drops" glitch.
+  // `visualViewport`'s own `resize`/`scroll` also fire when the mobile keyboard opens or
+  // closes (or the page auto-scrolls to keep a focused input visible), which is what
+  // keeps the docked composer pinned above the keyboard instead of hidden under it.
   useEffect(() => {
     let rafId: number | null = null
     const schedule = () => {
@@ -556,32 +766,65 @@ export function AutomationHero({
     }
     window.addEventListener('resize', schedule)
     window.addEventListener('orientationchange', schedule)
+    const viewport = window.visualViewport
+    viewport?.addEventListener('resize', schedule)
+    viewport?.addEventListener('scroll', schedule)
     return () => {
       window.removeEventListener('resize', schedule)
       window.removeEventListener('orientationchange', schedule)
+      viewport?.removeEventListener('resize', schedule)
+      viewport?.removeEventListener('scroll', schedule)
       if (rafId !== null) cancelAnimationFrame(rafId)
     }
   }, [recomputeTop])
 
   // Keep the docked position accurate as the composer's own height changes
-  // (textarea growth, attachment chips, hint text).
+  // (textarea growth, attachment chips, hint text). Also publish the height as a
+  // CSS variable so other sections (e.g. the process timeline) can size their
+  // content to the space still visible above the fixed composer, the same way
+  // `--header-height` lets them size to the space below the sticky header.
   useEffect(() => {
     const el = composerRef.current
     if (!el) return
-    const observer = new ResizeObserver(() => recomputeTop())
+    const html = document.documentElement
+    const updateComposerHeightVar = () => {
+      html.style.setProperty('--composer-height', `${el.getBoundingClientRect().height}px`)
+      recomputeTop()
+    }
+    const observer = new ResizeObserver(updateComposerHeightVar)
     observer.observe(el)
-    return () => observer.disconnect()
+    updateComposerHeightVar()
+    return () => {
+      observer.disconnect()
+      html.style.removeProperty('--composer-height')
+    }
   }, [recomputeTop])
 
-  // docked = the hero's embedded composer anchor has scrolled out of view.
+  // docked = the page has scrolled (even slightly) away from the hero's resting
+  // position — or, on mobile, unconditionally (see `isMobileRef` above; there is
+  // no embedded phase). This used to be driven by an IntersectionObserver on the
+  // anchor, flipping only once the anchor had *fully* scrolled out of view — but
+  // the anchor sits mid-hero, so that only happens well into (or near the end
+  // of) the browser's own scroll-snap animation, reading as a lagging, delayed
+  // dock. A small scroll-position threshold instead flips `docked` within the
+  // first frame or two of the snap animation starting, so the composer's own
+  // slide-to-bottom runs concurrently with the page's scroll instead of after it.
+  // This is safe from the earlier "continuously reassigns the live target"
+  // scroll-glitch bug (see `recomputeTop`'s history) because it only ever
+  // toggles a boolean past a fixed threshold — React bails out on repeated
+  // identical values, so it causes at most one state change (and one
+  // `recomputeTop()`) per actual crossing, never a moving target mid-scroll.
   useEffect(() => {
-    const el = anchorRef.current
-    if (!el) return
-    const observer = new IntersectionObserver(([entry]) => setDocked(!entry.isIntersecting), {
-      threshold: 0,
-    })
-    observer.observe(el)
-    return () => observer.disconnect()
+    if (isMobileRef.current) return
+    const DOCK_THRESHOLD_PX = 10
+    const checkScroll = () => {
+      if (isMobileRef.current) return
+      const headerHeight = document.querySelector('header')?.getBoundingClientRect().height ?? 0
+      setDocked(window.scrollY > headerHeight + DOCK_THRESHOLD_PX)
+    }
+    checkScroll()
+    window.addEventListener('scroll', checkScroll, { passive: true })
+    return () => window.removeEventListener('scroll', checkScroll)
   }, [])
 
   // footerNear = the footer has genuinely scrolled into view. Since snap sections are
@@ -670,7 +913,7 @@ export function AutomationHero({
         }`}
         style={{
           top: topPx ?? undefined,
-          transitionProperty: 'top, opacity',
+          transitionProperty: transitionReady ? 'top, opacity' : 'opacity',
           transitionDuration: '500ms, 300ms',
           transitionTimingFunction: 'ease-out',
         }}
