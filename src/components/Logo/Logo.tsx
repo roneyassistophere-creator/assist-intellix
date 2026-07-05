@@ -7,8 +7,8 @@ import siteConfig from '@/config/site'
 // fill already has enough contrast against both backgrounds.
 const LogoMark = () => (
   <svg
-    width="28"
-    height="28"
+    width="32"
+    height="32"
     viewBox="0 0 500 500"
     xmlns="http://www.w3.org/2000/svg"
     aria-hidden="true"
@@ -89,7 +89,7 @@ export const Logo = ({ className, loading, priority }: Props) => {
 
   return (
     <span
-      className={clsx('flex items-center gap-2.5 select-none', className)}
+      className={clsx('flex items-center gap-3 select-none', className)}
       aria-label={name}
     >
       <LogoMark />
