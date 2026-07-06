@@ -74,7 +74,7 @@ export function RequestFunnel({
                   ? 'Phone number (optional)'
                   : 'Your name'
             }
-            className="mt-3 w-full border-b border-white/10 bg-transparent pb-2 text-[15px] text-white placeholder-[#5a5a5f] focus:border-blue-400 focus:outline-none"
+            className="mt-3 w-full border-b border-white/10 bg-transparent pb-2 text-base md:text-[15px] text-white placeholder-[#5a5a5f] focus:border-blue-400 focus:outline-none"
           />
           {errorMessage && <p className="mt-2 text-xs text-red-400">{errorMessage}</p>}
         </div>

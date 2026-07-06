@@ -64,10 +64,18 @@ function ServiceRow({ item, onClose }: { item: NavChild; onClose: () => void }) 
         />
       </button>
 
-      {expanded &&
-        item.children!.map((sub) => (
-          <SubServiceRow key={sub.href} label={sub.label} href={sub.href} onClose={onClose} />
-        ))}
+      <div
+        className={clsx(
+          'grid transition-[grid-template-rows] duration-300 ease-out',
+          expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+        )}
+      >
+        <div className="overflow-hidden">
+          {item.children!.map((sub) => (
+            <SubServiceRow key={sub.href} label={sub.label} href={sub.href} onClose={onClose} />
+          ))}
+        </div>
+      </div>
     </>
   )
 }
@@ -118,8 +126,13 @@ function NavRow({
         />
       </button>
 
-      {expanded && (
-        <div className="bg-muted/40">
+      <div
+        className={clsx(
+          'grid transition-[grid-template-rows] duration-300 ease-out',
+          expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+        )}
+      >
+        <div className="overflow-hidden bg-muted/40">
           <Link
             href={item.href}
             onClick={onClose}
@@ -134,7 +147,7 @@ function NavRow({
             <ServiceRow key={child.href} item={child} onClose={onClose} />
           ))}
         </div>
-      )}
+      </div>
     </>
   )
 }

@@ -130,7 +130,7 @@ export default async function ContactPage() {
                   type="text"
                   required
                   autoComplete="name"
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -143,7 +143,7 @@ export default async function ContactPage() {
                   type="email"
                   required
                   autoComplete="email"
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -154,7 +154,7 @@ export default async function ContactPage() {
                   id="subject"
                   name="subject"
                   type="text"
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -166,7 +166,7 @@ export default async function ContactPage() {
                   name="message"
                   required
                   rows={5}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-y"
+                  className="rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-y"
                 />
               </div>
               <button

@@ -49,7 +49,7 @@ export const HeaderNav: React.FC = () => {
             </button>
 
             {/* Dropdown panel — bridge gap with pt-1 */}
-            <div className="absolute left-1/2 -translate-x-1/2 top-full hidden group-hover/top:block z-50 pt-1">
+            <div className="absolute left-1/2 -translate-x-1/2 top-full z-50 pt-1 invisible opacity-0 scale-95 -translate-y-1 transition-all duration-200 ease-out group-hover/top:visible group-hover/top:opacity-100 group-hover/top:scale-100 group-hover/top:translate-y-0">
               <div className="bg-background border border-border rounded-lg shadow-lg min-w-44 py-1">
                 {/* "All Services" link */}
                 <Link
@@ -97,7 +97,7 @@ export const HeaderNav: React.FC = () => {
                       </Link>
 
                       {/* Flyout panel */}
-                      <div className="absolute left-full top-0 hidden group-hover/child:block z-50 pl-1">
+                      <div className="absolute left-full top-0 z-50 pl-1 invisible opacity-0 scale-95 -translate-x-1 transition-all duration-200 ease-out group-hover/child:visible group-hover/child:opacity-100 group-hover/child:scale-100 group-hover/child:translate-x-0">
                         <div className="bg-background border border-border rounded-lg shadow-lg min-w-44 py-1">
                           {child.children!.map((sub) => (
                             <Link

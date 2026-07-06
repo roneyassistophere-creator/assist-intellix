@@ -51,7 +51,7 @@ export default async function HomePage() {
           </p>
           <Link
             href="/contact"
-            className="inline-flex items-center justify-center rounded-md bg-background text-foreground px-6 py-3 font-medium hover:bg-background/90 transition-colors"
+            className="inline-flex items-center justify-center rounded-md bg-background text-foreground px-6 py-3 font-medium transition-all duration-200 hover:bg-background/90 active:scale-95"
           >
             Contact Us
           </Link>

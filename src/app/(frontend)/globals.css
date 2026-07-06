@@ -209,8 +209,17 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    /* Defense-in-depth: without this, any single element that's even 1px
+       too wide (an easy accident on mobile, e.g. from an oversized fixed-
+       width background layer or an input-triggered zoom) makes the whole
+       page horizontally scrollable/pannable, since nothing else here
+       guards against it globally. */
+    overflow-x: hidden;
+  }
   body {
     @apply bg-background text-foreground min-h-[100vh] flex flex-col;
+    overflow-x: hidden;
   }
 }
 

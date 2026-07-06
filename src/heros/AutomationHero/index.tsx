@@ -322,7 +322,7 @@ function ChatInput({
           }}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="w-full resize-none bg-transparent text-[15px] text-white placeholder-[#5a5a5f] px-5 pt-5 pb-3 focus:outline-none min-h-[80px] max-h-[200px]"
+          className="w-full resize-none bg-transparent text-base md:text-[15px] text-white placeholder-[#5a5a5f] px-5 pt-5 pb-3 focus:outline-none min-h-[80px] max-h-[200px]"
           style={{ height: '80px' }}
         />
 
@@ -505,12 +505,15 @@ function ChatInput({
         {/* `overflow-hidden` can stay on permanently now — `ToolSelector`'s
             upward-opening dropdown lives in the separate, static button row
             below, not in this sliding viewport, so it's never clipped. */}
+        {/* Height snaps instantly to whatever the incoming step needs — no
+            `transition` on it. Animating `height` triggers layout on every
+            frame (unlike `transform`/`opacity`, which are compositor-only),
+            which reads as janky/stuttery especially on mobile hardware, and
+            it was fighting the perception of the actual intended motion here:
+            the box itself should just sit still while its *contents* slide. */}
         <div
           className="relative overflow-hidden"
-          style={{
-            height: regionHeight,
-            transition: 'height 320ms cubic-bezier(0.32,0.72,0,1)',
-          }}
+          style={{ height: regionHeight }}
         >
           {prevStage !== null && (
             <div
@@ -636,6 +639,13 @@ export function AutomationHero({
   const composerRef = useRef<HTMLDivElement>(null)
   const dockedRef = useRef(docked)
   const isMobileRef = useRef(false)
+  // Tracks whether a field inside the composer currently has focus. `visualViewport`
+  // only needs to drive positioning while the on-screen keyboard could plausibly be
+  // open — reacting to it at all other times means also reacting to mobile browsers'
+  // dynamic toolbar (URL bar) collapsing/expanding during ordinary scrolling, which
+  // continuously nudges `visualViewport.height` and was making the composer visibly
+  // jitter up and down while the page scrolled, for reasons unrelated to the keyboard.
+  const isInputFocusedRef = useRef(false)
 
   useEffect(() => {
     let rafId2: number | null = null
@@ -668,10 +678,13 @@ export function AutomationHero({
     return () => window.removeEventListener('resize', updateIsMobile)
   }, [])
 
-  // Scope full-page scroll-snap to this (homepage) page only.
+  // Scope full-page scroll-snap to this (homepage) page only. `scroll-smooth`
+  // (scroll-behavior: smooth) makes the browser animate between snap points
+  // instead of jump-cutting instantly — without it, `snap-mandatory` alone
+  // resolves each scroll gesture in a single hard cut, reading as abrupt/fast.
   useEffect(() => {
     const html = document.documentElement
-    html.classList.add('snap-y', 'snap-mandatory')
+    html.classList.add('snap-y', 'snap-mandatory', 'scroll-smooth')
 
     // The sticky header occupies real document-flow space before the hero, and has
     // no scroll-snap-align of its own, so the hero's natural snap-rest point sits at
@@ -691,7 +704,7 @@ export function AutomationHero({
     window.addEventListener('resize', updateHeaderHeightVar)
 
     return () => {
-      html.classList.remove('snap-y', 'snap-mandatory')
+      html.classList.remove('snap-y', 'snap-mandatory', 'scroll-smooth')
       html.style.removeProperty('--header-height')
       window.removeEventListener('resize', updateHeaderHeightVar)
     }
@@ -702,10 +715,14 @@ export function AutomationHero({
       const height = composerRef.current?.getBoundingClientRect().height ?? 0
       // `window.innerHeight` is the *layout* viewport and, on mobile Safari in
       // particular, does not shrink when the on-screen keyboard opens — only
-      // the *visual* viewport does. Anchoring to `visualViewport`'s bottom
-      // edge instead means the composer sits right above the keyboard rather
-      // than being covered by it, the way a real chat app's input bar does.
-      const viewport = window.visualViewport
+      // the *visual* viewport does. Anchoring to `visualViewport`'s bottom edge
+      // instead means the composer sits right above the keyboard rather than
+      // being covered by it, the way a real chat app's input bar does — but
+      // only while a field is actually focused (see `isInputFocusedRef`).
+      // Otherwise this falls back to the plain, stable `innerHeight`, so
+      // mobile browsers' dynamic toolbar collapsing during ordinary scrolling
+      // doesn't also nudge the composer around.
+      const viewport = isInputFocusedRef.current ? window.visualViewport : null
       const viewportBottom = viewport ? viewport.height + viewport.offsetTop : window.innerHeight
       setTopPx(viewportBottom - height)
     } else {
@@ -746,14 +763,18 @@ export function AutomationHero({
   }, [docked, recomputeTop])
 
   // Recompute on viewport-shape changes only. `docked` is already a discrete two-state
-  // value driven entirely by the anchor's IntersectionObserver below, and mandatory
+  // value driven entirely by the scroll-threshold effect below, and mandatory
   // scroll-snap means there's no in-between resting state worth tracking live during
   // scroll — doing so would fight the `top` CSS transition (a continuously-reassigned
   // target never lets the transition converge, then the docked flip jumps the rest of
   // the way), which is what caused the previous "rises, then independently drops" glitch.
-  // `visualViewport`'s own `resize`/`scroll` also fire when the mobile keyboard opens or
-  // closes (or the page auto-scrolls to keep a focused input visible), which is what
-  // keeps the docked composer pinned above the keyboard instead of hidden under it.
+  // `visualViewport`'s own `resize` also fires when the mobile keyboard opens or closes,
+  // which is what keeps the docked composer pinned above the keyboard instead of hidden
+  // under it (see `recomputeTop`, gated to only care about this while a field is
+  // focused). Deliberately *not* listening to `visualViewport`'s `scroll` event here —
+  // that fires continuously during ordinary page scrolling too (mobile browsers' toolbar
+  // collapsing changes the visual viewport on every scroll tick, not just the keyboard),
+  // which was making the composer visibly jitter up and down while scrolling.
   useEffect(() => {
     let rafId: number | null = null
     const schedule = () => {
@@ -768,13 +789,35 @@ export function AutomationHero({
     window.addEventListener('orientationchange', schedule)
     const viewport = window.visualViewport
     viewport?.addEventListener('resize', schedule)
-    viewport?.addEventListener('scroll', schedule)
     return () => {
       window.removeEventListener('resize', schedule)
       window.removeEventListener('orientationchange', schedule)
       viewport?.removeEventListener('resize', schedule)
-      viewport?.removeEventListener('scroll', schedule)
       if (rafId !== null) cancelAnimationFrame(rafId)
+    }
+  }, [recomputeTop])
+
+  // Track whether any field inside the composer is focused, using bubbling
+  // `focusin`/`focusout` (unlike `focus`/`blur`, these bubble) on the composer's
+  // outer element so this doesn't need wiring through every individual input.
+  // Recomputes immediately on each transition so the composer moves up right
+  // as the keyboard opens, and back down right as it closes.
+  useEffect(() => {
+    const el = composerRef.current
+    if (!el) return
+    const handleFocusIn = () => {
+      isInputFocusedRef.current = true
+      recomputeTop()
+    }
+    const handleFocusOut = () => {
+      isInputFocusedRef.current = false
+      recomputeTop()
+    }
+    el.addEventListener('focusin', handleFocusIn)
+    el.addEventListener('focusout', handleFocusOut)
+    return () => {
+      el.removeEventListener('focusin', handleFocusIn)
+      el.removeEventListener('focusout', handleFocusOut)
     }
   }, [recomputeTop])
 
