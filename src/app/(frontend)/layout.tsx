@@ -6,8 +6,8 @@ import { GeistSans } from 'geist/font/sans'
 import React from 'react'
 
 import { AdminBar } from '@/components/AdminBar'
+import { LazyGlobalComposer } from '@/components/GlobalComposer/Lazy'
 import { Footer } from '@/Footer/Component'
-import { GlobalComposer } from '@/components/GlobalComposer'
 import { Header } from '@/Header/Component'
 import { Providers } from '@/providers'
 import { InitTheme } from '@/providers/Theme/InitTheme'
@@ -42,7 +42,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             {children}
             <Footer />
           </div>
-          <GlobalComposer />
+          <LazyGlobalComposer />
         </Providers>
       </body>
     </html>

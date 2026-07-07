@@ -4,6 +4,7 @@ import Link from 'next/link'
 import React from 'react'
 
 import { CTABanner } from '@/components/marketing/CTABanner'
+import { FeatureGrid } from '@/components/marketing/FeatureGrid'
 import { GlassCard } from '@/components/marketing/GlassCard'
 import { Reveal } from '@/components/marketing/Reveal'
 import { SectionHeading } from '@/components/marketing/SectionHeading'
@@ -11,7 +12,7 @@ import { SolutionCard } from '@/components/marketing/SolutionCard'
 import { StatCard } from '@/components/marketing/StatCard'
 import { UseCaseCard } from '@/components/marketing/UseCaseCard'
 import { brandButtonClasses, ghostButtonClasses } from '@/components/marketing/styles'
-import { ProcessTimeline } from '@/components/ProcessTimeline'
+import { LazyProcessTimeline as ProcessTimeline } from '@/components/ProcessTimeline/Lazy'
 import siteConfig from '@/config/site'
 import { solutions } from '@/config/solutions'
 import { useCases } from '@/config/use-cases'
@@ -51,6 +52,9 @@ export default async function HomePage() {
 
       {/* Hero */}
       <AutomationHero />
+
+      {/* Trust / feature grid */}
+      <FeatureGrid />
 
       {/* Value proposition */}
       <section className="container py-24 text-center">
