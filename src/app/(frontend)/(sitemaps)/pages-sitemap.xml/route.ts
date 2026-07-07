@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { unstable_cache } from 'next/cache'
 import siteConfig from '@/config/site'
+import { solutions } from '@/config/solutions'
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SERVER_URL ||
@@ -34,11 +35,31 @@ const getPagesSitemap = unstable_cache(
     const hardcodedPages: { slug: string; loc: string; priority: number; changefreq: Changefreq }[] = [
       { slug: 'home', loc: `${SITE_URL}/`, priority: 1.0, changefreq: 'weekly' },
       { slug: 'services', loc: `${SITE_URL}/services`, priority: 0.9, changefreq: 'monthly' },
+      { slug: 'how-it-works', loc: `${SITE_URL}/how-it-works`, priority: 0.8, changefreq: 'monthly' },
+      { slug: 'use-cases', loc: `${SITE_URL}/use-cases`, priority: 0.8, changefreq: 'monthly' },
       { slug: 'about', loc: `${SITE_URL}/about`, priority: 0.8, changefreq: 'monthly' },
       { slug: 'blog', loc: `${SITE_URL}/blog`, priority: 0.8, changefreq: 'daily' },
       { slug: 'careers', loc: `${SITE_URL}/careers`, priority: 0.6, changefreq: 'monthly' },
       { slug: 'contact', loc: `${SITE_URL}/contact`, priority: 0.7, changefreq: 'yearly' },
       { slug: 'search', loc: `${SITE_URL}/search`, priority: 0.3, changefreq: 'weekly' },
+      { slug: 'privacy', loc: `${SITE_URL}/privacy`, priority: 0.3, changefreq: 'yearly' },
+      { slug: 'terms', loc: `${SITE_URL}/terms`, priority: 0.3, changefreq: 'yearly' },
+      // Solution + sub-solution pages, generated from the same data that
+      // drives the nav and routes (src/config/solutions.ts).
+      ...solutions.flatMap((solution) => [
+        {
+          slug: `services/${solution.slug}`,
+          loc: `${SITE_URL}/services/${solution.slug}`,
+          priority: 0.8,
+          changefreq: 'monthly' as Changefreq,
+        },
+        ...solution.subSolutions.map((sub) => ({
+          slug: `services/${solution.slug}/${sub.slug}`,
+          loc: `${SITE_URL}/services/${solution.slug}/${sub.slug}`,
+          priority: 0.7,
+          changefreq: 'monthly' as Changefreq,
+        })),
+      ]),
     ]
 
     return hardcodedPages.map(({ slug, loc, priority, changefreq }) => ({

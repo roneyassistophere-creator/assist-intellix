@@ -1,6 +1,8 @@
 import { Home, Layers, Users, BookOpen, Mail } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
+import { solutions } from './solutions'
+
 export type NavGrandchild = {
   label: string
   href: string
@@ -51,6 +53,12 @@ export type SiteConfig = {
   }
   nav: NavLink[]
   footerLinks: FooterLinkGroup[]
+  booking: {
+    /** Calendly / Cal.com embed URL; empty string = fall back to the audit form. */
+    calendarUrl: string
+  }
+  /** Group affiliation line rendered in the footer and on the About page. */
+  affiliation: string
   contact: {
     email: string
     phone?: string
@@ -67,9 +75,9 @@ export type SiteConfig = {
 const siteConfig: SiteConfig = {
   // ─── Identity ──────────────────────────────────────────────────────────────
   name: 'Assist Intellix',
-  tagline: 'We grow your business.',
+  tagline: 'Custom AI agents that take repetitive work off your plate.',
   description:
-    'Assist Intellix delivers world-class digital marketing, SEO, and web design for modern businesses.',
+    'Assist Intellix builds custom AI agents and automation systems that take over manual, repetitive tasks — so your team can focus on the work that grows your business.',
   url: process.env.NEXT_PUBLIC_SERVER_URL ?? 'http://localhost:3000',
 
   // ─── Logo ──────────────────────────────────────────────────────────────────
@@ -81,9 +89,9 @@ const siteConfig: SiteConfig = {
   // ─── SEO defaults ──────────────────────────────────────────────────────────
   seo: {
     titleTemplate: '%s | Assist Intellix',
-    defaultTitle: 'Assist Intellix — Digital Marketing & Web Design',
+    defaultTitle: 'Assist Intellix — Custom AI Agents & Automation',
     defaultDescription:
-      'Assist Intellix delivers world-class SEO, web design, and paid advertising for modern businesses.',
+      'Custom AI agents and automation systems that take over manual, repetitive work — lead generation, content, and business workflows that run themselves.',
     defaultOgImage: '/website-template-OG.webp',
     twitterHandle: '@assistintellix',
     googleVerification: process.env.GOOGLE_SITE_VERIFICATION ?? '',
@@ -94,56 +102,18 @@ const siteConfig: SiteConfig = {
   nav: [
     { label: 'Home', href: '/', icon: Home },
     {
-      label: 'Services',
+      label: 'Solutions',
       href: '/services',
       icon: Layers,
-      children: [
-        {
-          label: 'Service 1',
-          href: '/services/service-1',
-          children: [
-            { label: 'Sub Service 1', href: '/services/service-1/sub-service-1' },
-            { label: 'Sub Service 2', href: '/services/service-1/sub-service-2' },
-            { label: 'Sub Service 3', href: '/services/service-1/sub-service-3' },
-          ],
-        },
-        {
-          label: 'Service 2',
-          href: '/services/service-2',
-          children: [
-            { label: 'Sub Service 1', href: '/services/service-2/sub-service-1' },
-            { label: 'Sub Service 2', href: '/services/service-2/sub-service-2' },
-            { label: 'Sub Service 3', href: '/services/service-2/sub-service-3' },
-          ],
-        },
-        {
-          label: 'Service 3',
-          href: '/services/service-3',
-          children: [
-            { label: 'Sub Service 1', href: '/services/service-3/sub-service-1' },
-            { label: 'Sub Service 2', href: '/services/service-3/sub-service-2' },
-            { label: 'Sub Service 3', href: '/services/service-3/sub-service-3' },
-          ],
-        },
-        {
-          label: 'Service 4',
-          href: '/services/service-4',
-          children: [
-            { label: 'Sub Service 1', href: '/services/service-4/sub-service-1' },
-            { label: 'Sub Service 2', href: '/services/service-4/sub-service-2' },
-            { label: 'Sub Service 3', href: '/services/service-4/sub-service-3' },
-          ],
-        },
-        {
-          label: 'Service 5',
-          href: '/services/service-5',
-          children: [
-            { label: 'Sub Service 1', href: '/services/service-5/sub-service-1' },
-            { label: 'Sub Service 2', href: '/services/service-5/sub-service-2' },
-            { label: 'Sub Service 3', href: '/services/service-5/sub-service-3' },
-          ],
-        },
-      ],
+      // Generated from solutions.ts so nav and routes can never drift apart.
+      children: solutions.map((solution) => ({
+        label: solution.title,
+        href: `/services/${solution.slug}`,
+        children: solution.subSolutions.map((sub) => ({
+          label: sub.title,
+          href: `/services/${solution.slug}/${sub.slug}`,
+        })),
+      })),
     },
     { label: 'About', href: '/about', icon: Users },
     { label: 'Blog', href: '/blog', icon: BookOpen },
@@ -156,14 +126,18 @@ const siteConfig: SiteConfig = {
       heading: 'Company',
       links: [
         { label: 'About', href: '/about' },
-        { label: 'Services', href: '/services' },
+        { label: 'Solutions', href: '/services' },
         { label: 'Careers', href: '/careers' },
         { label: 'Contact', href: '/contact' },
       ],
     },
     {
-      heading: 'Content',
-      links: [{ label: 'Blog', href: '/blog' }],
+      heading: 'Explore',
+      links: [
+        { label: 'How It Works', href: '/how-it-works' },
+        { label: 'Use Cases', href: '/use-cases' },
+        { label: 'Blog', href: '/blog' },
+      ],
     },
     {
       heading: 'Legal',
@@ -174,11 +148,17 @@ const siteConfig: SiteConfig = {
     },
   ],
 
+  // ─── Booking ───────────────────────────────────────────────────────────────
+  booking: {
+    calendarUrl: process.env.NEXT_PUBLIC_BOOKING_URL ?? '',
+  },
+
+  // ─── Group ─────────────────────────────────────────────────────────────────
+  affiliation: 'An Assistophere company',
+
   // ─── Contact ───────────────────────────────────────────────────────────────
   contact: {
-    email: 'hello@assistintellix.com',
-    phone: '+1 (555) 000-0000',
-    address: '123 Main St, San Francisco, CA 94105',
+    email: 'intellix.assistophere@gmail.com',
   },
 
   // ─── Social ────────────────────────────────────────────────────────────────

@@ -1,33 +1,55 @@
+import { Ear, ListChecks, Search } from 'lucide-react'
 import type { Metadata } from 'next'
 import React from 'react'
 
-import { getPageSEO } from '@/utilities/getPageSEO'
-import { generatePageMeta } from '@/utilities/generateMeta'
-import { jsonLdScript, webPageSchema, breadcrumbSchema } from '@/utilities/jsonld'
+import { CalendarEmbed } from '@/components/marketing/CalendarEmbed'
+import { GlassCard } from '@/components/marketing/GlassCard'
+import { Reveal } from '@/components/marketing/Reveal'
 import siteConfig from '@/config/site'
+import { generatePageMeta } from '@/utilities/generateMeta'
+import { getPageSEO } from '@/utilities/getPageSEO'
+import { jsonLdScript, webPageSchema, breadcrumbSchema } from '@/utilities/jsonld'
 
 export const dynamic = 'force-static'
 export const revalidate = 3600
 
 export async function generateMetadata(): Promise<Metadata> {
   const seoDoc = await getPageSEO('contact').catch(() => null)
-  return generatePageMeta({ slug: 'contact', seoDoc, fallbackTitle: 'Contact' })
+  return generatePageMeta({ slug: 'contact', seoDoc, fallbackTitle: 'Book a Free Automation Audit' })
 }
+
+const expectations = [
+  {
+    icon: Ear,
+    title: 'You talk, we listen',
+    description: 'Walk us through how your business runs day to day.',
+  },
+  {
+    icon: Search,
+    title: 'We find the bottlenecks',
+    description: 'We pinpoint the repetitive tasks costing you the most.',
+  },
+  {
+    icon: ListChecks,
+    title: 'You get a clear plan',
+    description: 'What to automate first — with a fixed-price quote if you want to proceed.',
+  },
+]
 
 export default async function ContactPage() {
   const seoDoc = await getPageSEO('contact').catch(() => null)
 
   return (
-    <>
+    <div className="bg-canvas">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: jsonLdScript([
             webPageSchema({
-              name: seoDoc?.meta?.title ?? 'Contact',
+              name: seoDoc?.meta?.title ?? 'Book a Free Automation Audit',
               description:
                 seoDoc?.meta?.description ??
-                `Get in touch with ${siteConfig.name}. We would love to hear about your project.`,
+                `Book a free 30-minute Automation Audit with ${siteConfig.name}. We'll identify the highest-impact tasks to automate in your business.`,
               url: `${siteConfig.url}/contact`,
               type: 'ContactPage',
             }),
@@ -40,145 +62,59 @@ export default async function ContactPage() {
       />
 
       {/* Header */}
-      <section className="py-24 bg-muted text-center px-4">
-        <div className="container max-w-2xl">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Get in Touch</h1>
-          <p className="text-lg text-muted-foreground">
-            Have a project in mind? We&apos;d love to hear about it. Reach out and we will get back
-            to you within one business day.
+      <section className="relative overflow-hidden px-4 pb-16 pt-24 text-center">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute left-1/2 top-0 h-72 w-2xl -translate-x-1/2 -translate-y-1/2 rounded-full opacity-30 blur-3xl"
+          style={{ background: 'radial-gradient(closest-side, #1488fc, transparent)' }}
+        />
+        <div className="container relative max-w-2xl">
+          <h1 className="text-4xl font-semibold tracking-tight text-white md:text-5xl">
+            Book your free <span className="text-gradient-brand">Automation Audit</span>
+          </h1>
+          <p className="mt-5 text-lg leading-relaxed text-white/60">
+            30 minutes. No pressure. We&apos;ll find the highest-impact tasks to automate — and
+            tell you honestly whether an AI agent is the right fit.
           </p>
         </div>
       </section>
 
-      <section className="py-24 bg-background">
-        <div className="container max-w-5xl grid md:grid-cols-2 gap-16">
-          {/* Contact details */}
-          <div>
-            <h2 className="text-xl font-semibold mb-6">Contact Information</h2>
-            <dl className="flex flex-col gap-5 text-sm">
-              {siteConfig.contact.email && (
-                <div>
-                  <dt className="text-muted-foreground mb-1">Email</dt>
-                  <dd>
-                    <a
-                      href={`mailto:${siteConfig.contact.email}`}
-                      className="hover:text-primary transition-colors"
-                    >
-                      {siteConfig.contact.email}
-                    </a>
-                  </dd>
-                </div>
-              )}
-              {siteConfig.contact.phone && (
-                <div>
-                  <dt className="text-muted-foreground mb-1">Phone</dt>
-                  <dd>
-                    <a
-                      href={`tel:${siteConfig.contact.phone.replace(/\s/g, '')}`}
-                      className="hover:text-primary transition-colors"
-                    >
-                      {siteConfig.contact.phone}
-                    </a>
-                  </dd>
-                </div>
-              )}
-              {siteConfig.contact.address && (
-                <div>
-                  <dt className="text-muted-foreground mb-1">Address</dt>
-                  <dd className="whitespace-pre-line">{siteConfig.contact.address}</dd>
-                </div>
-              )}
-            </dl>
-
-            {siteConfig.social.length > 0 && (
-              <div className="mt-10">
-                <h3 className="text-sm font-semibold mb-4 text-muted-foreground uppercase tracking-wider">
-                  Follow Us
-                </h3>
-                <div className="flex flex-wrap gap-3">
-                  {siteConfig.social.map(({ platform, href }) => (
-                    <a
-                      key={platform}
-                      href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm px-4 py-2 rounded-md border border-border hover:border-primary/50 hover:text-primary transition-colors"
-                    >
-                      {platform}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Simple contact form */}
-          <div>
-            <h2 className="text-xl font-semibold mb-6">Send a Message</h2>
-            <form
-              action="/api/contact"
-              method="POST"
-              className="flex flex-col gap-5"
-            >
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="name" className="text-sm font-medium">
-                  Name <span className="text-destructive">*</span>
-                </label>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  required
-                  autoComplete="name"
-                  className="rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="email" className="text-sm font-medium">
-                  Email <span className="text-destructive">*</span>
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  autoComplete="email"
-                  className="rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="subject" className="text-sm font-medium">
-                  Subject
-                </label>
-                <input
-                  id="subject"
-                  name="subject"
-                  type="text"
-                  className="rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="message" className="text-sm font-medium">
-                  Message <span className="text-destructive">*</span>
-                </label>
-                <textarea
-                  id="message"
-                  name="message"
-                  required
-                  rows={5}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-y"
-                />
-              </div>
-              <button
-                type="submit"
-                className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground px-6 py-3 font-medium hover:bg-primary/90 transition-colors"
-              >
-                Send Message
-              </button>
-            </form>
-          </div>
+      {/* What to expect */}
+      <section className="container pb-16">
+        <div className="grid gap-5 md:grid-cols-3">
+          {expectations.map((item, i) => (
+            <Reveal key={item.title} delay={i * 100}>
+              <GlassCard className="h-full text-center">
+                <item.icon className="mx-auto h-6 w-6 text-brand-cyan" />
+                <h2 className="mt-4 text-base font-semibold text-white">{item.title}</h2>
+                <p className="mt-2 text-sm leading-relaxed text-white/60">{item.description}</p>
+              </GlassCard>
+            </Reveal>
+          ))}
         </div>
       </section>
-    </>
+
+      {/* Booking */}
+      <section className="container max-w-3xl pb-8">
+        <CalendarEmbed />
+      </section>
+
+      {/* Email alternative + reassurance */}
+      <section className="container max-w-3xl pb-24 text-center">
+        <p className="text-sm text-white/60">
+          Prefer email? Reach us at{' '}
+          <a
+            href={`mailto:${siteConfig.contact.email}`}
+            className="font-medium text-brand-cyan transition-colors hover:text-brand-teal"
+          >
+            {siteConfig.contact.email}
+          </a>
+        </p>
+        <p className="mt-4 text-xs text-white/40">
+          No obligation. No hard sell. If automation isn&apos;t right for your business yet,
+          we&apos;ll tell you that too.
+        </p>
+      </section>
+    </div>
   )
 }

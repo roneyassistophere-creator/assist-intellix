@@ -56,6 +56,19 @@ export const AutomationRequests: CollectionConfig = {
       },
     },
     {
+      name: 'source',
+      type: 'select',
+      defaultValue: 'composer',
+      options: [
+        { label: 'Composer', value: 'composer' },
+        { label: 'Audit form', value: 'audit-form' },
+      ],
+      admin: {
+        position: 'sidebar',
+        description: 'Where the request was submitted from.',
+      },
+    },
+    {
       name: 'status',
       type: 'select',
       required: true,

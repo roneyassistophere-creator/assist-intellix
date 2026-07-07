@@ -14,6 +14,7 @@ export async function POST(req: Request) {
   const tool = typeof body?.tool === 'string' ? body.tool.trim() : ''
   const phone = typeof body?.phone === 'string' ? body.phone.trim() : ''
   const wantsPlan = body?.wantsPlan === true
+  const source = body?.source === 'audit-form' ? 'audit-form' : 'composer'
   const attachments = Array.isArray(body?.attachments)
     ? body.attachments.filter((a: unknown): a is string => typeof a === 'string' && a.trim() !== '')
     : []
@@ -38,6 +39,7 @@ export async function POST(req: Request) {
         tool,
         wantsPlan,
         attachments: attachments.length > 0 ? attachments.join(', ') : undefined,
+        source,
         status: 'new',
       },
     })

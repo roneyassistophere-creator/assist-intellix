@@ -31,7 +31,7 @@ const MOBILE_MAX_WIDTH = 640
 // any future page) is hidden by default — safest.
 function isComposerVisible(pathname: string): boolean {
   if (pathname === '/') return true
-  return ['/about', '/services', '/careers'].some(
+  return ['/about', '/services', '/careers', '/how-it-works', '/use-cases'].some(
     (p) => pathname === p || pathname.startsWith(p + '/'),
   )
 }

@@ -29,7 +29,7 @@ export const HeaderClient: React.FC = () => {
 
   return (
     <header
-      className="sticky top-0 z-30 w-full border-b border-border/40 bg-background/90 backdrop-blur-sm"
+      className="sticky top-0 z-30 w-full border-b border-white/10 bg-canvas/80 backdrop-blur-sm"
       {...(heroTheme ? { 'data-theme': heroTheme } : {})}
     >
       <div className="container py-4 flex justify-between items-center">
@@ -40,6 +40,12 @@ export const HeaderClient: React.FC = () => {
           <div className="hidden md:flex">
             <HeaderNav />
           </div>
+          <Link
+            href="/contact"
+            className="hidden md:inline-flex items-center justify-center rounded-full bg-brand-blue px-5 py-2 text-sm font-medium text-white shadow-[0_0_20px_rgba(20,136,252,0.3)] transition-all hover:bg-[#1a94ff] active:scale-95"
+          >
+            Book a Call
+          </Link>
           <div className="md:hidden">
             <MobileMenu />
           </div>

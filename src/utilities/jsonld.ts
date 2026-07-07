@@ -166,6 +166,20 @@ export function articleSchema(args: {
   }
 }
 
+export function faqSchema(
+  items: { question: string; answer: string }[],
+): WithContext<Record<string, unknown>> {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: items.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: { '@type': 'Answer', text: item.answer },
+    })),
+  }
+}
+
 export function breadcrumbSchema(items: { name: string; href: string }[]): BreadcrumbSchema {
   return {
     '@context': 'https://schema.org',

@@ -17,6 +17,12 @@ export function Footer() {
               <Logo />
             </Link>
             <p className="mt-3 text-sm text-white/60 max-w-xs">{siteConfig.tagline}</p>
+            <a
+              href={`mailto:${siteConfig.contact.email}`}
+              className="mt-3 inline-block text-sm text-white/70 hover:text-white transition-colors"
+            >
+              {siteConfig.contact.email}
+            </a>
           </div>
 
           {siteConfig.footerLinks.map((group) => (
@@ -46,6 +52,7 @@ export function Footer() {
             &copy; {currentYear} {siteConfig.org.legalName || siteConfig.name}. All rights
             reserved.
           </p>
+          <p className="text-xs text-white/40">{siteConfig.affiliation}</p>
         </div>
       </div>
     </footer>

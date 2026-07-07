@@ -386,6 +386,10 @@ export interface AutomationRequest {
    * File names the visitor noted as context (not uploaded, informational only).
    */
   attachments?: string | null;
+  /**
+   * Where the request was submitted from.
+   */
+  source?: ('composer' | 'audit-form') | null;
   status: 'new' | 'contacted' | 'closed';
   updatedAt: string;
   createdAt: string;
@@ -1028,6 +1032,7 @@ export interface AutomationRequestsSelect<T extends boolean = true> {
   tool?: T;
   wantsPlan?: T;
   attachments?: T;
+  source?: T;
   status?: T;
   updatedAt?: T;
   createdAt?: T;

@@ -243,7 +243,14 @@ export const MobileMenu: React.FC = () => {
 
               {/* Footer */}
               <div className="border-t border-border px-4 py-4 shrink-0">
-                <p className="text-xs text-muted-foreground">
+                <Link
+                  href="/contact"
+                  onClick={close}
+                  className="flex w-full items-center justify-center rounded-full bg-linear-to-r from-brand-blue to-brand-deep px-5 py-3 text-sm font-medium text-white shadow-[0_0_20px_rgba(20,136,252,0.3)] transition-all active:scale-95"
+                >
+                  Book a Free Automation Audit
+                </Link>
+                <p className="mt-3 text-xs text-muted-foreground">
                   &copy; {new Date().getFullYear()} {siteConfig.name}
                 </p>
               </div>

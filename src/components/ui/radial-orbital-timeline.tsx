@@ -18,7 +18,10 @@ interface TimelineItem {
   icon: React.ElementType
   relatedIds: number[]
   status: 'completed' | 'in-progress' | 'pending'
-  energy: number
+  /** Overrides the status text on the card badge (e.g. "STEP 1"). */
+  badgeLabel?: string
+  /** When omitted, the card's meter row is hidden entirely. */
+  energy?: number
 }
 
 interface RadialOrbitalTimelineProps {
@@ -288,11 +291,12 @@ export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTim
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <Badge className={`px-2 text-xs ${getStatusStyles(item.status)}`}>
-              {item.status === 'completed'
-                ? 'COMPLETE'
-                : item.status === 'in-progress'
-                  ? 'IN PROGRESS'
-                  : 'PENDING'}
+              {item.badgeLabel ??
+                (item.status === 'completed'
+                  ? 'COMPLETE'
+                  : item.status === 'in-progress'
+                    ? 'IN PROGRESS'
+                    : 'PENDING')}
             </Badge>
             <span className="font-mono text-xs text-white/50">{item.date}</span>
           </div>
@@ -301,21 +305,23 @@ export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTim
         <CardContent className="text-xs text-white/80">
           <p>{item.content}</p>
 
-          <div className="mt-4 border-t border-white/10 pt-3">
-            <div className="mb-1 flex items-center justify-between text-xs">
-              <span className="flex items-center">
-                <Zap size={10} className="mr-1" />
-                Energy Level
-              </span>
-              <span className="font-mono">{item.energy}%</span>
+          {typeof item.energy === 'number' && (
+            <div className="mt-4 border-t border-white/10 pt-3">
+              <div className="mb-1 flex items-center justify-between text-xs">
+                <span className="flex items-center">
+                  <Zap size={10} className="mr-1" />
+                  Energy Level
+                </span>
+                <span className="font-mono">{item.energy}%</span>
+              </div>
+              <div className="h-1 w-full overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
+                  style={{ width: `${item.energy}%` }}
+                ></div>
+              </div>
             </div>
-            <div className="h-1 w-full overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
-                style={{ width: `${item.energy}%` }}
-              ></div>
-            </div>
-          </div>
+          )}
 
           {item.relatedIds.length > 0 && (
             <div className="mt-4 border-t border-white/10 pt-3">
@@ -386,6 +392,7 @@ export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTim
             const isRelated = isRelatedToActive(item.id)
             const isPulsing = pulseEffect[item.id]
             const Icon = item.icon
+            const glowSize = (item.energy ?? 40) * 0.5 + 40
 
             const nodeStyle = {
               transform: `translate(${position.x}px, ${position.y}px)`,
@@ -419,10 +426,10 @@ export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTim
                   }`}
                   style={{
                     background: `radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%)`,
-                    width: `${item.energy * 0.5 + 40}px`,
-                    height: `${item.energy * 0.5 + 40}px`,
-                    left: `-${(item.energy * 0.5 + 40 - 40) / 2}px`,
-                    top: `-${(item.energy * 0.5 + 40 - 40) / 2}px`,
+                    width: `${glowSize}px`,
+                    height: `${glowSize}px`,
+                    left: `-${(glowSize - 40) / 2}px`,
+                    top: `-${(glowSize - 40) / 2}px`,
                   }}
                 ></div>
 
