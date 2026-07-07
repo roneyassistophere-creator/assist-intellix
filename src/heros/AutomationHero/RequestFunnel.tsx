@@ -24,9 +24,9 @@ interface RequestFunnelProps {
   onContinue: () => void
 }
 
-// Pure step content — no recap header, no buttons. `ChatInput` owns the
-// surrounding chrome (card shell, static button row) and the slide/resize
-// animation this content mounts into.
+// Pure step content — no recap header, no buttons. `GlobalComposer` owns the
+// surrounding chrome (card shell, static button row) and mounts this content
+// directly (no animation).
 export function RequestFunnel({
   stage,
   name,
@@ -51,15 +51,27 @@ export function RequestFunnel({
   return (
     <div className="flex flex-col">
       {isFieldStage && (
-        <div className="px-5 pt-4 pb-2">
-          <p className="text-[15px] text-white">
+        <div className="px-4 pt-3.5 pb-2 sm:px-5 sm:pt-4">
+          <p className="text-base md:text-[15px] text-white">
             {stage === 'email' && "You'll need your email to request the build."}
             {stage === 'phone' && "What's the best number to reach you?"}
             {stage === 'name' && "Last thing — what's your name?"}
           </p>
+          {/*
+            One persistent <input> for all three field steps — it must NOT be
+            remounted between them (no changing `key`, no changing `type`), or the
+            mobile keyboard dismisses and reopens on every step. `type` stays
+            "text"; the on-screen keyboard layout is steered by `inputMode`
+            instead, which can change without blurring the field. `autoFocus`
+            fires once when the funnel first opens (within the Build-now tap, so
+            iOS opens the keyboard); focus is then retained across steps because
+            the node persists and the step buttons preventDefault their blur.
+          */}
           <input
             autoFocus
-            type={stage === 'email' ? 'email' : stage === 'phone' ? 'tel' : 'text'}
+            type="text"
+            inputMode={stage === 'email' ? 'email' : stage === 'phone' ? 'tel' : 'text'}
+            autoComplete={stage === 'email' ? 'email' : stage === 'phone' ? 'tel' : 'name'}
             value={stage === 'email' ? email : stage === 'phone' ? phone : name}
             onChange={(e) => {
               if (stage === 'email') onEmailChange(e.target.value)

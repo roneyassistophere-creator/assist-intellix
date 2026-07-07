@@ -43,7 +43,7 @@ export default async function HomePage() {
       <ProcessTimeline />
 
       {/* CTA */}
-      <section className="snap-start snap-always scroll-mt-(--header-height,0px) flex min-h-[calc(100dvh-var(--header-height,0px))] flex-col justify-center overflow-y-auto bg-primary px-4 py-24 text-center text-primary-foreground">
+      <section className="bg-primary px-4 py-24 text-center text-primary-foreground">
         <div className="max-w-2xl mx-auto">
           <h2 className="text-3xl font-bold mb-4">Ready to get started?</h2>
           <p className="mb-8 opacity-90">

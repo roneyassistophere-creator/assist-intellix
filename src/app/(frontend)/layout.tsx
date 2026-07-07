@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 
 import { cn } from '@/utilities/ui'
 import { GeistMono } from 'geist/font/mono'
@@ -7,6 +7,7 @@ import React from 'react'
 
 import { AdminBar } from '@/components/AdminBar'
 import { Footer } from '@/Footer/Component'
+import { GlobalComposer } from '@/components/GlobalComposer'
 import { Header } from '@/Header/Component'
 import { Providers } from '@/providers'
 import { InitTheme } from '@/providers/Theme/InitTheme'
@@ -41,10 +42,23 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             {children}
             <Footer />
           </div>
+          <GlobalComposer />
         </Providers>
       </body>
     </html>
   )
+}
+
+// App-like viewport: disable all browser zoom (auto-zoom on input focus,
+// double-tap, pinch) so typing never zooms the page; `interactiveWidget:
+// 'resizes-content'` makes the on-screen keyboard shrink the layout viewport on
+// Android so the fixed bottom composer rides above it natively.
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  interactiveWidget: 'resizes-content',
 }
 
 export const metadata: Metadata = {

@@ -65,7 +65,7 @@ export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTim
   // retargets every 50ms as they rotate — a one-time radius step never catches
   // up under that transition and stays visually oversized for several seconds.
   useEffect(() => {
-    const updateScale = () => setOrbitScale(window.innerWidth < 640 ? 0.6 : 1)
+    const updateScale = () => setOrbitScale(window.innerWidth < 640 ? 0.7 : 1)
     updateScale()
     window.addEventListener('resize', updateScale)
     return () => window.removeEventListener('resize', updateScale)
@@ -354,13 +354,7 @@ export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTim
 
   return (
     <div
-      className="snap-start snap-always scroll-mt-(--header-height,0px) flex min-h-[calc(100dvh-var(--header-height,0px))] w-full flex-col items-center justify-center overflow-hidden bg-black"
-      // The fixed composer overlays the bottom of this section once docked, so
-      // centering needs to happen within the space still visible above it — not
-      // the section's full height — or the content reads as centered too low.
-      // `--composer-height` is published by AutomationHero from the composer's
-      // live rendered height, the same way `--header-height` sizes the top.
-      style={{ paddingBottom: 'var(--composer-height, 0px)' }}
+      className="flex min-h-[620px] sm:min-h-[720px] w-full flex-col items-center justify-center overflow-hidden bg-black py-16"
       ref={containerRef}
       onClick={handleContainerClick}
     >

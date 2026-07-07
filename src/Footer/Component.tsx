@@ -8,7 +8,7 @@ export function Footer() {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className="snap-start snap-always scroll-mt-(--header-height,0px) mt-auto border-t border-border bg-black dark:bg-card text-white">
+    <footer className="mt-auto border-t border-border bg-black dark:bg-card text-white">
       <div className="container py-12">
         {/* Top row: logo + link groups */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
