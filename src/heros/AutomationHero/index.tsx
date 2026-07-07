@@ -37,15 +37,16 @@ function LampGlow() {
     ? { duration: 0 }
     : { ease: 'easeInOut' as const, delay: 0.3, duration: 0.8 }
 
-  // Every animated size scales down together on mobile so the glow reads as
-  // a small, centered version of the desktop effect instead of a bar that
-  // blows out edge-to-edge and clips against overflow-hidden.
-  const beam = isDesktop ? { from: '8rem', to: '16rem' } : { from: '4rem', to: '8rem' }
-  const line = isDesktop ? { from: '15rem', to: '30rem' } : { from: '8rem', to: '16rem' }
-  const cone = isDesktop ? { from: '15rem', to: '30rem' } : { from: '8rem', to: '16rem' }
-  const coneHeight = isDesktop ? 'h-56' : 'h-32'
-  const maskThickness = isDesktop ? 'w-40' : 'w-20'
-  const maskThicknessH = isDesktop ? 'h-40' : 'h-20'
+  // Every animated size scales down together on mobile, matching roughly the
+  // same final-width-to-viewport ratio as desktop (~30-35%), so the glow
+  // reads as a small, centered version of the desktop effect — not a bar
+  // that blows out edge-to-edge and clips against overflow-hidden.
+  const beam = isDesktop ? { from: '8rem', to: '16rem' } : { from: '2rem', to: '4rem' }
+  const line = isDesktop ? { from: '15rem', to: '30rem' } : { from: '4rem', to: '8rem' }
+  const cone = isDesktop ? { from: '15rem', to: '30rem' } : { from: '4rem', to: '8rem' }
+  const coneHeight = isDesktop ? 'h-56' : 'h-24'
+  const maskThickness = isDesktop ? 'w-40' : 'w-16'
+  const maskThicknessH = isDesktop ? 'h-40' : 'h-16'
 
   return (
     // inset-0 (not just top-0 + flex-1) so this wrapper actually has a height —
@@ -56,7 +57,7 @@ function LampGlow() {
       <div className="absolute top-0 z-50 h-48 w-full bg-transparent opacity-10 backdrop-blur-md" />
 
       {/* Main glow */}
-      <div className="absolute inset-auto z-50 h-24 w-40 -translate-y-[-30%] rounded-full bg-brand-blue/60 opacity-80 blur-3xl sm:h-36 sm:w-[28rem]" />
+      <div className="absolute inset-auto z-50 h-16 w-28 -translate-y-[-30%] rounded-full bg-brand-blue/60 opacity-80 blur-2xl sm:h-36 sm:w-[28rem] sm:blur-3xl" />
 
       {/* Lamp beam */}
       <m.div
@@ -64,7 +65,7 @@ function LampGlow() {
         viewport={{ once: true }}
         transition={lineTransition}
         whileInView={{ width: beam.to }}
-        className="absolute top-0 z-30 h-36 -translate-y-[20%] rounded-full bg-brand-blue/60 blur-2xl"
+        className="absolute top-0 z-30 h-36 -translate-y-[20%] rounded-full bg-brand-blue/60 blur-xl sm:blur-2xl"
       />
 
       {/* Top line */}
